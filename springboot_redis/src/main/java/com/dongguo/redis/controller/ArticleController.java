@@ -29,7 +29,7 @@ public class ArticleController {
             summary = "获取喜欢数",
             description = "获取喜欢数"
     )
-    @PostMapping("/getLikeNumber/{articleId}")
+    @GetMapping("/getLikeNumber/{articleId}")
     public Long getLikeNumber(@PathVariable String articleId) {
        return articleService.getLikeNumber(articleId);
     }
