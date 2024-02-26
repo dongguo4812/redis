@@ -7,4 +7,6 @@ public class CacheConstants {
     public  static final String CACHE_KEY_ARTICLE="redis:article:";
 
     public  static final String CACHE_KEY_HYPELOGLOG="redis:hypeLogLog";
+
+    public  static final String CACHE_KEY_GEO="redis:geo";
 }
