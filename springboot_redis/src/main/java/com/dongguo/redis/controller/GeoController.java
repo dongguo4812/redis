@@ -54,7 +54,7 @@ public class GeoController {
             summary = "通过经纬度查找附近地点",
             description = "通过经纬度查找附近地点"
     )
-    @GetMapping("/getGeoRadius")
+    @PostMapping("/getGeoRadius")
     public GeoResults getGeoRadius(@RequestBody Point point) {
         return geoService.getGeoRadius(point);
     }
@@ -63,7 +63,7 @@ public class GeoController {
             summary = "通过地址查找附近地点",
             description = "通过地址查找附近地点"
     )
-    @GetMapping("/getGeoRadiusByMember")
+    @GetMapping("/getGeoRadiusByMember/{member}")
     public GeoResults getGeoRadiusByMember(@PathVariable String member) {
         return geoService.getGeoRadiusByMember(member);
     }
