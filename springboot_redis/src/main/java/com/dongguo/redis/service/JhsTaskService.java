@@ -2,6 +2,9 @@ package com.dongguo.redis.service;
 
 import cn.hutool.core.date.DateUtil;
 import com.dongguo.redis.entity.Product;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import io.micrometer.core.instrument.binder.cache.GuavaCacheMetrics;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +16,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.dongguo.redis.util.CacheConstants.CACHE_KEY_JHS;
+import static com.dongguo.redis.util.CacheConstants.*;
 
 /**
  * @Author: Administrator
@@ -32,9 +35,13 @@ public class JhsTaskService {
             while (true) {
                 List<Product> productList = getProducts();
                 //删除缓存数据
-                redisTemplate.delete(CACHE_KEY_JHS);
+                redisTemplate.delete(CACHE_KEY_JHS_B);
                 //将最新获取到的聚划算商品缓存到redis
-                redisTemplate.opsForList().leftPushAll(CACHE_KEY_JHS, productList);
+                redisTemplate.opsForList().leftPushAll(CACHE_KEY_JHS_B, productList, 20, TimeUnit.DAYS);
+
+                //保证删除缓存B时，缓存A还能够命中,删除缓存A时，缓存B已经重建
+                redisTemplate.delete(CACHE_KEY_JHS_A);
+                redisTemplate.opsForList().leftPushAll(CACHE_KEY_JHS_A, productList, 15, TimeUnit.DAYS);
                 //模拟定时。间隔1分钟执行一次
                 log.info("定时任务 淘宝聚划算功能获取商品列表 已刷新");
                 try {

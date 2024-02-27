@@ -11,4 +11,6 @@ public class CacheConstants {
     public  static final String CACHE_KEY_GEO="redis:geo";
 
     public  static final String CACHE_KEY_JHS="redis:jhs";
+    public  static final String CACHE_KEY_JHS_A="redis:jhs:a";
+    public  static final String CACHE_KEY_JHS_B="redis:jhs:b";
 }
