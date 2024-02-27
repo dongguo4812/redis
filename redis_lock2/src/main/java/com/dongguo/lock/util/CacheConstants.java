@@ -6,4 +6,5 @@ package com.dongguo.lock.util;
  */
 public class CacheConstants {
     public  static final String CACHE_KEY_ORDER_STOCK="redis:order:stock:";
+    public  static final String CACHE_ORDER_STOCK_LOCk="order:stock:lock:";
 }

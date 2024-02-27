@@ -7,7 +7,9 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 import java.io.Serializable;
 
@@ -43,5 +45,13 @@ public class RedisConfig {
         return redisTemplate;
     }
 
+    @Bean
+    public RedissonClient redissonClient() {
+        Config config = new Config();
+        // 也可以将 redis 配置信息保存到配置文件
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        return Redisson.create(config);
+
+    }
 }
 
