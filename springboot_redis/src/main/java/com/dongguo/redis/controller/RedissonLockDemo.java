@@ -17,7 +17,7 @@ public class RedissonLockDemo {
     private static Redisson redisson;
     static {
         config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379").setDatabase(0);
+        config.useSingleServer().setAddress("redis://192.168.122.128:6379").setDatabase(0);
         redisson = (Redisson) Redisson.create(config);
     }
     public static void main(String[] args) {

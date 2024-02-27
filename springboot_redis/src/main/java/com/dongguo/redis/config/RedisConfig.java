@@ -49,7 +49,7 @@ public class RedisConfig {
     public RedissonClient redissonClient() {
         Config config = new Config();
         // 也可以将 redis 配置信息保存到配置文件
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        config.useSingleServer().setAddress("redis://192.168.122.128:6379");
         return Redisson.create(config);
 
     }
