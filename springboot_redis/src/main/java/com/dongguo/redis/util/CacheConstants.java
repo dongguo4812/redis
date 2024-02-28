@@ -14,6 +14,7 @@ public class CacheConstants {
     public  static final String CACHE_KEY_JHS_A="redis:jhs:a";
     public  static final String CACHE_KEY_JHS_B="redis:jhs:b";
     public  static final String CACHE_KEY_REDISSON_LOCK="redisson:lock";
+    public  static final String CACHE_KEY_SHORT_URL="redis:short:url";
 
 
 }
