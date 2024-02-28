@@ -1,6 +1,7 @@
 package com.dongguo.redis.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -20,6 +21,10 @@ import java.io.Serializable;
 @Configuration
 @Slf4j
 public class RedisConfig {
+
+    @Autowired
+    private RedisProperties redisProperties;
+
     /**
      * @param lettuceConnectionFactory
      * @return redis序列化的工具配置类，下面这个请一定开启配置
@@ -49,7 +54,7 @@ public class RedisConfig {
     public RedissonClient redissonClient() {
         Config config = new Config();
         // 也可以将 redis 配置信息保存到配置文件
-        config.useSingleServer().setAddress("redis://192.168.122.128:6379");
+        config.useSingleServer().setAddress("redis://" + redisProperties.getHost() + ":" + redisProperties.getPort()).setPassword(redisProperties.getPassword()).setDatabase(redisProperties.getDatabase());
         return Redisson.create(config);
 
     }

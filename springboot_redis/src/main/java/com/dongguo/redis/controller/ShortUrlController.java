@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.Random;
 
 import static com.dongguo.redis.util.CacheConstants.CACHE_KEY_SHORT_URL;

@@ -7,6 +7,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +19,11 @@ import java.util.concurrent.TimeUnit;
  * redis布隆过滤器demo
  */
 public class RedisBloomFilterDemo {
+    @Value("${spring.data.redis.host}")
+    private static String host;
+
+    @Value("${spring.data.redis.port}")
+    private static String port;
     private static final int COUNT = 10000 * 100;
     //误判率  大于0小于1.0
     private static final double FPP = 0.03;
@@ -27,7 +33,7 @@ public class RedisBloomFilterDemo {
 
     static {
         Config configs = new Config();
-        configs.useSingleServer().setAddress("redis://192.168.122.128:6379").setPassword("root").setDatabase(0);
+        configs.useSingleServer().setAddress("redis://" + host + ":" + port).setPassword("root").setDatabase(0);
         redissonClient = Redisson.create(configs);
         //初始化布隆过滤器
         bloomFilter = redissonClient.getBloomFilter("phoneNumBloomFilter", new StringCodec());
