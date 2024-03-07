@@ -1,2 +1,33 @@
 server:
   port: 8080
+spring:
+  application:
+    name: redis_client
+# ========================redis相关配置=====================
+
+
+# ========================logging 日志相关的配置=====================
+logging:
+  level:
+    #系统默认，全局root配置的日志形式，可以注释掉
+    root: info
+    #开发人员自己设置的包结构，对那个package进行什么级别的日志监控
+    com.dongguo.redis: info
+  file:
+    #开发人员自定义日志路径和日志名称
+     name: E:/log/redis_client/redis.log
+    #%d{HH:mm:ss.SSS}――日志输出时间
+    #%thread――输出日志的进程名字，这在Web应用以及异步任务处理中很有用
+    #%-5level――日志级别，并且使用5个字符靠左对齐
+    #%logger- ――日志输出者的名字
+    #%msg――日志消息
+    #%n――平台的换行符
+    #logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger- %msg%n
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger- %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger- %msg%n"
+# ========================swagger=====================
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
