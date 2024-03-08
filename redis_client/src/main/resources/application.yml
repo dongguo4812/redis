@@ -4,11 +4,25 @@ spring:
   application:
     name: redis_client
 # ========================redis相关配置=====================
+#  data:
+#    redis:
+#      host: 192.168.122.131
+#      port: 6379
+#      password: root
   data:
     redis:
-      host: 192.168.122.131
-      port: 6379
       password: root
+      cluster:
+        nodes: 192.168.122.132:7001,192.168.122.133:7002,192.168.122.134:7003,192.168.122.135:7004,192.168.122.136:7005,192.168.122.137:7006
+        #获取失败，最大重定向次数
+        max-redirects: 3
+      lettuce:
+        cluster:
+          refresh:
+            #支持集群拓扑动态感应刷新，自适应拓扑刷新是否使用所有可用的更新，默认false关闭
+            adaptive: true
+            #定时刷新时间
+            period: 2000
 # ========================logging 日志相关的配置=====================
 logging:
   level:

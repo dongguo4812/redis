@@ -263,6 +263,8 @@ Warning: Using a password with '-a' or '-u' option on the command line interface
 
 RedisTemplate默认使用的是JdkSerializationRedisSerializer,
 
+RedisTemplate#afterPropertiesSet()：
+
 ![image-20240308114138558](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081141986.png)
 
 StringRedisTemplate默认使用的是StringRedisSerializer。
@@ -435,3 +437,236 @@ public class OrderService {
 ![image-20240308121550627](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081215373.png)
 
 # 连接Redis集群
+
+## 查看集群节点情况
+
+```shell
+192.168.122.134:7003> cluster nodes
+318bf90e3c9922aadf8e72734c86a75fd1ab571d 192.168.122.133:7002@17002 master - 0 1709873834126 2 connected 6827-10922
+21e92cb603e3456bb1cb49dc3ab668978ef1f22f 192.168.122.137:7006@17006 slave 318bf90e3c9922aadf8e72734c86a75fd1ab571d 0 1709873834000 2 connected
+d341462815d05806cf27bdfe2627af3a05fccfc8 192.168.122.135:7004@17004 slave e49ab26e91fd5b8a726bc1e4a79cf0f6de2fd663 0 1709873833000 3 connected
+e49ab26e91fd5b8a726bc1e4a79cf0f6de2fd663 192.168.122.134:7003@17003 myself,master - 0 1709873832000 3 connected 12288-16383
+9c35d6afa7ba4b161864a71b1c6bad9e4d1d62ff 192.168.122.136:7005@17005 slave 19ebecba98d2e33ba184d396e630a9e6434e4196 0 1709873833577 12 connected
+19ebecba98d2e33ba184d396e630a9e6434e4196 192.168.122.132:7001@17001 master - 0 1709873833074 12 connected 0-6826 10923-12287
+
+```
+
+## 修改application.yml
+
+```shell
+# ========================redis相关配置=====================
+#  data:
+#    redis:
+#      host: 192.168.122.131
+#      port: 6379
+#      password: root
+  data:
+    redis:
+      password: root
+      cluster:
+        nodes: 192.168.122.132:7001,192.168.122.133:7002,192.168.122.134:7003,192.168.122.135:7004,192.168.122.136:7005,192.168.122.137:7006
+        #获取失败，最大重定向次数
+        max-redirects: 3
+```
+
+重新启动项目，新增订单，访问集群：
+
+新增订单，订单id:order:937，订单No:753f1dc5-d9ad-484e-9ca9-14ef528f1829
+
+连接7001客户端，读取order:937
+
+```shell
+[root@redis-7001 ~]# redis-cli -a root -p 7001 -c --raw
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+127.0.0.1:7001> get order:937
+-> Redirected to slot [8479] located at 192.168.122.133:7002
+"订单号:753f1dc5-d9ad-484e-9ca9-14ef528f1829"
+192.168.122.133:7002> 
+```
+
+## 问题：master节点宕机，故障迁移slave变成master，程序是否能够正常运行
+
+### 1.master7001宕机
+
+```shell
+127.0.0.1:7001> shutdown
+not connected> quit
+```
+
+### 2.等待slave7005变成master7005
+
+7005已经变成master了。
+
+```shell
+[root@sentinel2 myredis]# redis-cli -a root -p 7005 -c
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+127.0.0.1:7005> cluster nodes
+9c35d6afa7ba4b161864a71b1c6bad9e4d1d62ff 192.168.122.136:7005@17005 myself,master - 0 1709877535000 13 connected 0-6826 10923-12287
+e49ab26e91fd5b8a726bc1e4a79cf0f6de2fd663 192.168.122.134:7003@17003 master - 0 1709877535000 3 connected 12288-16383
+318bf90e3c9922aadf8e72734c86a75fd1ab571d 192.168.122.133:7002@17002 master - 0 1709877536000 2 connected 6827-10922
+d341462815d05806cf27bdfe2627af3a05fccfc8 192.168.122.135:7004@17004 slave e49ab26e91fd5b8a726bc1e4a79cf0f6de2fd663 0 1709877537259 3 connected
+19ebecba98d2e33ba184d396e630a9e6434e4196 192.168.122.132:7001@17001 master,fail - 1709877376272 1709877374000 12 disconnected
+21e92cb603e3456bb1cb49dc3ab668978ef1f22f 192.168.122.137:7006@17006 slave 318bf90e3c9922aadf8e72734c86a75fd1ab571d 0 1709877536247 2 connected
+```
+
+并且集群还是能够正常读写
+
+```
+127.0.0.1:7005> set k1 v1
+-> Redirected to slot [12706] located at 192.168.122.134:7003
+OK
+192.168.122.134:7003> set k2 v2
+-> Redirected to slot [449] located at 192.168.122.136:7005
+OK
+192.168.122.136:7005> set k3 v3
+OK
+192.168.122.136:7005> get k1
+-> Redirected to slot [12706] located at 192.168.122.134:7003
+"v1"
+192.168.122.134:7003> get k2
+-> Redirected to slot [449] located at 192.168.122.136:7005
+"v2"
+192.168.122.136:7005> get k3
+"v3"
+```
+
+### 3.查看项目运行情况
+
+此时控制台疯狂的刷Connection refused: no further information: /192.168.122.132:7001
+
+```xml
+2024-03-08 14:55:34.593 [lettuce-nioEventLoop-4-16] WARN  io.lettuce.core.protocol.ConnectionWatchdog- Cannot reconnect to [192.168.122.132/<unresolved>:7001]: Connection refused: no further information: /192.168.122.132:7001
+2024-03-08 14:55:52.858 [lettuce-nioEventLoop-4-1] WARN  io.lettuce.core.cluster.topology.DefaultClusterTopologyRefresh- Unable to connect to [192.168.122.132/<unresolved>:7001]: Connection refused: no further information: /192.168.122.132:7001
+```
+
+
+
+新增订单，程序报错：Connection refused: no further information
+
+```java
+java.net.ConnectException: Connection refused: no further information
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:672)
+	at java.base/sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:946)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:335)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:833)
+```
+
+重新新增订单成功，新增订单，订单id:order:591，订单No:7da371da-d677-48a7-a46e-93d0dc5b4fbe
+
+再次重试又程序报错
+
+```java
+java.net.ConnectException: Connection refused: no further information
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:672)
+	at java.base/sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:946)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:335)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:833)
+```
+
+redis集群故障后经过故障转移，集群恢复正常，但是java端调用还是出现异常。
+
+对此请求发现，key落到mater7002、master7003的槽位上时请求可以正常执行，落到为master7005分配的槽位时请求报错。
+
+
+
+redis集群从3主3从变为了3主2从，但是java端并没有接收到集群架构的变化。即SpringBoot客户端没有动态感知道RedisCluster的最新集群信息。
+
+## 问题
+
+在 Spring Boot 2.X 版本以后，默认使用 Lettuce 作为 Redis 的连接池，当 Redis 集群的节点发生变化（例如添加或删除了节点），Lettuce 默认不会自动刷新节点拓扑。这可能导致应用无法正确连接到新的节点或无法正确处理已删除的节点。
+
+
+
+## 解决方案
+
+### 1.使用其他连接池
+
+可以考虑使用其他 Redis 连接池，如 Jedis。Jedis 在处理集群节点变化时可能有不同的行为或提供更多的配置选项。这里需要根据你的具体需求和应用的特性来选择最合适的解决方案。
+
+### 2.重写连接工厂，定时刷新节点信息
+
+可在RedisConfig添加以下代码
+
+```java
+    @Bean
+    public DefaultClientResources lettuceClientResources() {
+        return DefaultClientResources.create();
+    }
+    /**
+     *定时扫描Redis集群的拓扑变化，自动更新本地的节点信息。
+     * @return
+     */
+    @Bean
+    public LettuceConnectionFactory lettuceConnectionFactory(RedisProperties redisProperties, ClientResources clientResources) {
+        ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+                .enablePeriodicRefresh(Duration.ofSeconds(30))//按照周期刷新拓扑
+                .enableAllAdaptiveRefreshTriggers()//当满足特定条件时，自动触发拓扑刷新，比如某个连接失败等
+                .build();
+        ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
+                //redis命令超时时间，超时后才会使用新的拓扑信息重新建立连接
+                .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(10)))
+                .topologyRefreshOptions(topologyRefreshOptions)
+                .build();
+        LettuceClientConfiguration clientConfiguration = LettuceClientConfiguration.builder()
+                .clientResources(clientResources)
+                .clientOptions(clusterClientOptions)
+                .build();
+        RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(redisProperties.getCluster().getNodes());
+        clusterConfig.setMaxRedirects(redisProperties.getCluster().getMaxRedirects());
+        clusterConfig.setPassword(RedisPassword.of(redisProperties.getPassword()));
+
+        return new LettuceConnectionFactory(clusterConfig, clientConfiguration);
+    }
+```
+
+### 3.刷新节点集群拓扑动态感应
+
+yml中添加以下代码lettuce部分
+
+```yaml
+  data:
+    redis:
+      password: root
+      cluster:
+        nodes: 192.168.122.132:7001,192.168.122.133:7002,192.168.122.134:7003,192.168.122.135:7004,192.168.122.136:7005,192.168.122.137:7006
+        #获取失败，最大重定向次数
+        max-redirects: 3
+      lettuce:
+        cluster:
+          refresh:
+            #支持集群拓扑动态感应刷新，自适应拓扑刷新是否使用所有可用的更新，默认false关闭
+            adaptive: true
+            #定时刷新时间
+            period: 2000
+```
+
+
+
+推荐使用3.刷新节点集群拓扑动态感应
+
+
+
+
+
+
+
+
+
