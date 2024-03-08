@@ -131,7 +131,7 @@ Jedis Client是Redis官网推荐的一个面向java客户端，库文件实现�
         jedis.zadd("zset", 80,"v2");
         jedis.zadd("zset", 40,"v3");
         jedis.zadd("zset", 70,"v4");
-        List<Tuple> zset = jedis.zrangeWithScores("zset", 0, -1);
+        Set<Tuple> zset = jedis.zrangeWithScores("zset", 0, -1);
         System.out.println(zset);
     }
 运行结果:[[v3,40.0], [v1,50.0], [v4,70.0], [v2,80.0]]

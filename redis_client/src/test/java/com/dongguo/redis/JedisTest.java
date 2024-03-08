@@ -3,7 +3,7 @@ package com.dongguo.redis;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.resps.Tuple;
+import redis.clients.jedis.Tuple;
 
 import java.util.List;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class JedisTest {
         jedis.zadd("zset", 80,"v2");
         jedis.zadd("zset", 40,"v3");
         jedis.zadd("zset", 70,"v4");
-        List<Tuple> zset = jedis.zrangeWithScores("zset", 0, -1);
+        Set<Tuple> zset = jedis.zrangeWithScores("zset", 0, -1);
         System.out.println(zset);
     }
 }
