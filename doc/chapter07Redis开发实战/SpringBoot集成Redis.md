@@ -218,42 +218,220 @@ public class OrderController {
 
 启动项目，访问swagger：http://127.0.0.1:8080/swagger-ui/index.html
 
+![image-20240308112227889](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081122493.png)
+
+### 新增订单
+
+![image-20240308112449179](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081124349.png)
+
+控制台输出：新增订单，订单id:order:696，订单No:fe1e8c94-864b-40a6-bd81-3f353ee0f514
+
+### 查询订单
+
+![image-20240308112536400](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081125556.png)
+
+控制台输出：订单号:fe1e8c94-864b-40a6-bd81-3f353ee0f514
+
+## 序列化问题
+
+使用xshell连接redis客户端，查看新增的key，发现不存在
+
+```shell
+[root@redis ~]# redis-cli -a root
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+127.0.0.1:6379> get order:696
+(nil)
+```
+
+使用`keys *`查看所有key，发现有个key:  "\xac\xed\x00\x05t\x00\torder:696"，我明明存的是order:696，变成了\xac\xed\x00\x05t\x00\torder:696。
+
+```shell
+127.0.0.1:6379> keys *
+1) "k1"
+2) "list"
+3) "zset"
+4) "s1"
+5) "\xac\xed\x00\x05t\x00\torder:696"
+6) "user"
+```
+
+使用可视化工具发现key和value都变成乱码了。
+
+![image-20240308113650579](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081136879.png)
+
+原来key和value都是通过Spring提供的Serializer序列化到redis的。
+
+RedisTemplate默认使用的是JdkSerializationRedisSerializer,
+
+![image-20240308114138558](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081141986.png)
+
+StringRedisTemplate默认使用的是StringRedisSerializer。
+
+![image-20240308114239894](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081142294.png)
+
+其中RedisSerializer.string()就是StringRedisSerializer。
+
+![image-20240308114320843](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081143422.png)
+
+使用RedisTemplate默认的JdkSerializationRedisSerializer序列化后，线上通过KEY去查询对应的VALUE非常不方便。
+
+解决序列化问题的方法有两种：
+
+1.使用StringRedisTemplate
+
+2.指定RedisTemplate使用StringRedisSerializer
+
+### 使用StringRedisTemplate
+
+OrderService：
+
+```java
+package com.dongguo.redis.service;
+
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static com.dongguo.redis.utils.CacheKeyUtil.ORDER_KEY;
+
+@Service
+@Slf4j
+public class OrderService {
+    @Resource
+    private RedisTemplate redisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+    public void addOrder() {
+        Long orderId = ThreadLocalRandom.current().nextLong(1000) + 1;
+        String orderNO = UUID.randomUUID().toString();
+        String key = ORDER_KEY + orderId;
+        String value = "订单号:" + orderNO;
+        stringRedisTemplate.opsForValue().set(key, value);
+        log.info("新增订单，订单id:{}，订单No:{}", key, orderNO);
+    }
+
+    public String getOrder(Long orderId) {
+        String key = ORDER_KEY + orderId;
+        Object obj = stringRedisTemplate.opsForValue().get(key);
+        if (obj == null) {
+            log.info("订单不存在");
+        } else {
+            log.info((String) obj);
+        }
+        return (String) obj;
+    }
+}
+```
+
+新增订单，订单id:order:866，订单No:ca3f2279-05aa-44f3-8be7-89f750c20e33
+
+查看redis
+
+![image-20240308121330186](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081213357.png)
+
+### 指定RedisTemplate使用StringRedisSerializer
+
+创建RedisConfig序列化的工具配置类
+
+```java
+package com.dongguo.redis.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.io.Serializable;
+
+/**
+ * redis序列化工具类
+ */
+
+@Configuration
+@Slf4j
+public class RedisConfig {
 
 
+    /**
+     * @param lettuceConnectionFactory
+     * @return redis序列化的工具配置类
+     * 1) "order:696"  序列化过
+     * 2) "\xac\xed\x00\x05t\x00\order:696"   没有序列化过
+     */
+    @Bean
+    public RedisTemplate<String, Serializable> redisTemplate(LettuceConnectionFactory lettuceConnectionFactory) {
+        RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(lettuceConnectionFactory);
+        //设置key序列化方式string
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        //设置value的序列化方式json
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.afterPropertiesSet();
+        return redisTemplate;
+    }
+}
+```
 
+OrderService：
 
-## 新增订单
+```java
+package com.dongguo.redis.service;
 
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
+import static com.dongguo.redis.utils.CacheKeyUtil.ORDER_KEY;
 
+@Service
+@Slf4j
+public class OrderService {
+    @Resource
+    private RedisTemplate redisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+    public void addOrder() {
+        Long orderId = ThreadLocalRandom.current().nextLong(1000) + 1;
+        String orderNO = UUID.randomUUID().toString();
+        String key = ORDER_KEY + orderId;
+        String value = "订单号:" + orderNO;
+        redisTemplate.opsForValue().set(key, value);
+        log.info("新增订单，订单id:{}，订单No:{}", key, orderNO);
+    }
 
+    public String getOrder(Long orderId) {
+        String key = ORDER_KEY + orderId;
+        Object obj = redisTemplate.opsForValue().get(key);
+        if (obj == null) {
+            log.info("订单不存在");
+        } else {
+            log.info((String) obj);
+        }
+        return (String) obj;
+    }
+}
 
+```
 
+新增订单，订单id:order:179，订单No:ae08c68b-a770-4ef1-b595-7a52d828d39b
 
+查看redis
 
-## 查询订单
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+![image-20240308121550627](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403081215373.png)
 
 # 连接Redis集群
