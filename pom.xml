@@ -9,17 +9,31 @@
     <packaging>pom</packaging>
     <modules>
         <module>redis_client</module>
+        <module>springboot_redis</module>
     </modules>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springdoc.version>2.3.0</springdoc.version>
-        <spring-boot-web.version>3.2.3</spring-boot-web.version>
+        <spring-boot.version>3.2.3</spring-boot.version>
         <lombok.version>1.18.30</lombok.version>
         <jedis.version>3.2.0</jedis.version>
         <lettuce.version>6.3.1.RELEASE</lettuce.version>
         <log4j.version>1.2.17</log4j.version>
+        <redisson.verson>3.19.1</redisson.verson>
+        <guava.vesion>23.0</guava.vesion>
+        <mapper.version>4.1.5</mapper.version>
+        <persistence.version>1.0.2</persistence.version>
+        <hutool.version>5.2.3</hutool.version>
+        <junit.version>4.12</junit.version>
+        <commons-codec>1.10</commons-codec>
+        <mybatis.spring.boot.version>3.0.0</mybatis.spring.boot.version>
+        <druid.version>1.1.7</druid.version>
+        <druid-spring-boot.version>1.1.10</druid-spring-boot.version>
+        <mysql.version>8.0.28</mysql.version>
+        <commons-pool2.version>2.12.0</commons-pool2.version>
+        <jrebloom.version>2.1.0</jrebloom.version>
     </properties>
 
     <dependencyManagement>
@@ -27,12 +41,17 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
-                <version>${spring-boot-web.version}</version>
+                <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot-web.version}</version>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
             <!--导入SpringBoot集成Open API 3.0（Swagger3.0）的坐标 -->
             <dependency>
@@ -40,16 +59,12 @@
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-            </dependency>
+
             <!--springboot与redis整合包-->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-redis</artifactId>
-                <version>${spring-boot-web.version}</version>
+                <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>redis.clients</groupId>
@@ -62,9 +77,109 @@
                 <version>${lettuce.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${redisson.verson}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.vesion}</version>
+            </dependency>
+            <!-- jrebloom布隆过滤器 -->
+            <dependency>
+                <groupId>com.redislabs</groupId>
+                <artifactId>jrebloom</artifactId>
+                <version>${jrebloom.version}</version>
+            </dependency>
+            <!--通用Mapper-->
+            <dependency>
+                <groupId>tk.mybatis</groupId>
+                <artifactId>mapper</artifactId>
+                <version>${mapper.version}</version>
+            </dependency>
+            <!--persistence-->
+            <dependency>
+                <groupId>javax.persistence</groupId>
+                <artifactId>persistence-api</artifactId>
+                <version>${persistence.version}</version>
+            </dependency>
+
+            <!--通用基础配置junit/devtools/test/log4j/lombok/hutool-->
+            <!--hutool-->
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <!--日志-->
+            <dependency>
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
                 <version>${log4j.version}</version>
+            </dependency>
+            <!--Lombok-->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-devtools</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <!-- 添加springboot对amqp的支持 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-amqp</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec}</version>
+            </dependency>
+            <!--mybatis和springboot整合-->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis.spring.boot.version}</version>
+            </dependency>
+            <!--SpringBoot集成druid连接池-->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid-spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <!--Mysql数据库驱动-->
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+            <!--springCache-->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-cache</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <!--springCache连接池依赖包-->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-pool2</artifactId>
+                <version>${commons-pool2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
