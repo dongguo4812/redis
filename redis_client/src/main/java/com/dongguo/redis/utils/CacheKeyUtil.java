@@ -6,19 +6,14 @@ package com.dongguo.redis.utils;
 public class CacheKeyUtil {
 
     public static final String ORDER_KEY = "order:";
-
-    public  static final String CACHE_KEY_USER="redis:user:";
-
-    public  static final String CACHE_KEY_USER_LOCK="redis:user:lock:";
-    public  static final String CACHE_KEY_ARTICLE="redis:article:";
-
-    public  static final String CACHE_KEY_HYPELOGLOG="redis:hypeLogLog";
-
-    public  static final String CACHE_KEY_GEO="redis:geo";
-
-    public  static final String CACHE_KEY_JHS="redis:jhs";
-    public  static final String CACHE_KEY_JHS_A="redis:jhs:a";
-    public  static final String CACHE_KEY_JHS_B="redis:jhs:b";
-    public  static final String CACHE_KEY_REDISSON_LOCK="redisson:lock";
-    public  static final String CACHE_KEY_SHORT_URL="redis:short:url";
+    public  static final String CACHE_USER_KEY="redis:user:";
+    public  static final String CACHE_USER_LOCK_KEY="redis:user:lock:";
+    public  static final String CACHE_ARTICLE_KEY="redis:article:";
+    public  static final String CACHE_HYPELOGLOG_KEY="redis:hypeLogLog";
+    public  static final String CACHE_GEO_KEY="redis:geo";
+    public  static final String CACHE_JHS_KEY="redis:jhs";
+    public  static final String CACHE_JHS_A_KEY="redis:jhs:a";
+    public  static final String CACHE_JHS_B_KEY="redis:jhs:b";
+    public  static final String CACHE_REDISSON_LOCK_KEY="redisson:lock";
+    public  static final String CACHE_SHORT_URL_KEY="redis:short:url";
 }
