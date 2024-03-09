@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     @Resource
     private UserService userService;
+
     /***
      * 根据ID查询用户信息（单条）
      * @param id 用户ID
@@ -45,7 +46,7 @@ public class UserController {
     @PostMapping("/addUser")
     public void addUser(@RequestBody UserDTO userDTO) {
         User user = new User();
-        BeanUtils.copyProperties(userDTO,user);
+        BeanUtils.copyProperties(userDTO, user);
         userService.addUser(user);
     }
 
@@ -71,7 +72,7 @@ public class UserController {
     @PostMapping("/editUser")
     public void editUser(@RequestBody UserDTO userDTO) {
         User user = new User();
-        BeanUtils.copyProperties(userDTO,user);
+        BeanUtils.copyProperties(userDTO, user);
         userService.editUser(user);
     }
 }

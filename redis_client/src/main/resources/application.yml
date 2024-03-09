@@ -3,7 +3,16 @@ server:
 spring:
   application:
     name: redis_client
-# ========================redis相关配置=====================
+  # ========================alibaba.druid相关配置=====================
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/redis?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: root
+    druid:
+      test-while-ide: false
+  # ========================redis相关配置=====================
 #  data:
 #    redis:
 #      host: 192.168.122.131
@@ -23,6 +32,10 @@ spring:
             adaptive: true
             #定时刷新时间
             period: 2000
+# ========================mybatis相关配置===================
+mybatis:
+  type-aliases-package: com.dongguo.redis.entity
+  mapper-location: classpath:mapper/*.xml
 # ========================logging 日志相关的配置=====================
 logging:
   level:
