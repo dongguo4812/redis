@@ -25,7 +25,7 @@
         <log4j.version>1.2.17</log4j.version>
         <redisson.verson>3.19.1</redisson.verson>
         <guava.vesion>23.0</guava.vesion>
-        <mapper.version>4.1.5</mapper.version>
+        <mapper.version>4.2.3</mapper.version>
         <persistence.version>1.0.2</persistence.version>
         <hutool.version>5.2.3</hutool.version>
         <junit.version>4.12</junit.version>

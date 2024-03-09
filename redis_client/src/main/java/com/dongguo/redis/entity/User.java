@@ -19,44 +19,44 @@ import java.util.Date;
 public class User {
     @Id
     @GeneratedValue(generator = "JDBC")
-    @Schema(name = "ID", description = "ID")
+    @Schema(name = "id", description = "ID")
     private Long id;
 
     /**
      * 用户名
      */
-    @Schema(name = "用户名", description = "用户名")
+    @Schema(name = "username", description = "用户名")
     private String username;
 
     /**
      * 密码
      */
-    @Schema(name = "密码", description = "密码")
+    @Schema(name = "password", description = "密码")
     private String password;
 
     /**
      * 性别 0=女 1=男 
      */
-    @Schema(name = "性别", description = "性别 0=女 1=男")
+    @Schema(name = "sex", description = "性别 0=女 1=男")
     private Byte sex;
 
     /**
      * 删除标志，默认0不删除，1删除
      */
-    @Schema(name = "删除标志", description = "删除标志，默认0不删除，1删除")
+    @Schema(name = "deleted", description = "删除标志，默认0不删除，1删除")
     private Byte deleted;
 
     /**
      * 更新时间
      */
-    @Schema(name = "更新时间", description = "更新时间")
+    @Schema(name = "updateTime", description = "更新时间")
     @Column(name = "update_time")
     private Date updateTime;
 
     /**
      * 创建时间
      */
-    @Schema(name = "创建时间", description = "创建时间")
+    @Schema(name = "create_time", description = "创建时间")
     @Column(name = "create_time")
     private Date createTime;
 }

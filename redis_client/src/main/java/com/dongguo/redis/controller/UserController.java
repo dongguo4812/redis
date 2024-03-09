@@ -1,7 +1,7 @@
 package com.dongguo.redis.controller;
 
 import com.dongguo.redis.entity.User;
-import com.dongguo.redis.entity.UserDTO;
+import com.dongguo.redis.entity.UserBO;
 import com.dongguo.redis.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,9 +44,9 @@ public class UserController {
             description = "新增用户信息"
     )
     @PostMapping("/addUser")
-    public void addUser(@RequestBody UserDTO userDTO) {
+    public void addUser(@RequestBody UserBO userBO) {
         User user = new User();
-        BeanUtils.copyProperties(userDTO, user);
+        BeanUtils.copyProperties(userBO, user);
         userService.addUser(user);
     }
 
@@ -70,9 +70,9 @@ public class UserController {
             description = "编辑用户信息"
     )
     @PostMapping("/editUser")
-    public void editUser(@RequestBody UserDTO userDTO) {
+    public void editUser(@RequestBody UserBO userBO) {
         User user = new User();
-        BeanUtils.copyProperties(userDTO, user);
+        BeanUtils.copyProperties(userBO, user);
         userService.editUser(user);
     }
 }
