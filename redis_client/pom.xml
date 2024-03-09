@@ -74,10 +74,10 @@
             <artifactId>mapper</artifactId>
         </dependency>
         <!--hutool-->
-<!--        <dependency>
+        <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-        </dependency>-->
+        </dependency>
     </dependencies>
 
     <build>
