@@ -5,10 +5,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
-
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_ARTICLE_KEY;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_WECHAT_KEY;
 
