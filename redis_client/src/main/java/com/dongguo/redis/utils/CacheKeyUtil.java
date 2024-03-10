@@ -10,7 +10,7 @@ public class CacheKeyUtil {
     public  static final String CACHE_USER_LOCK_KEY="redis:user:lock:";
     public  static final String CACHE_ARTICLE_KEY="redis:article:";
     public  static final String CACHE_WECHAT_KEY="redis:wechat:";
-    public  static final String CACHE_HYPELOGLOG_KEY="redis:hypeLogLog";
+    public  static final String CACHE_TMALL_UV_KEY="redis:tmall:uv";
     public  static final String CACHE_GEO_KEY="redis:geo";
     public  static final String CACHE_JHS_KEY="redis:jhs";
     public  static final String CACHE_JHS_A_KEY="redis:jhs:a";
