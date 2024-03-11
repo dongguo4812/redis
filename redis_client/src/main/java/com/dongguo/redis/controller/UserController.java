@@ -35,7 +35,17 @@ public class UserController {
     public User findUser(@PathVariable(value = "id") Long id) {
         return userService.findUserV3(id);
     }
-
+    /***
+     * 初始化用户信息
+     */
+    @Operation(
+            summary = "新增用户信息",
+            description = "初始化用户信息"
+    )
+    @PostMapping("/initBloomFilter")
+    public void initBloomFilter() {
+        userService.initBloomFilter();
+    }
     /***
      * 新增用户信息（单条）
      */

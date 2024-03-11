@@ -26,7 +26,7 @@ public class UserService {
     /**
      * 初始化布隆过滤器
      */
-    @PostConstruct
+//    @PostConstruct
     public void initBloomFilter() {
         //符合条件的元素。
         List<User> userList = userMapper.selectAll();

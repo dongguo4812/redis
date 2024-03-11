@@ -15,14 +15,14 @@ public class GuavaBloomFilterDemo4 {
     //布隆过滤器预计插入的元素数量为100W
     private static final int COUNT = 10000 * 100;
     //误判率  大于0小于1.0。值越小误判的个数也就越少
-    private static final double FPP = 0.01;
+    private static final double FPP = 0.000000001;
 
 
     /**
      * 误判率演示
      */
     public static void main(String[] args) {
-        //误判率设置为0.01
+
         BloomFilter<Integer> filter = BloomFilter.create(Funnels.integerFunnel(), COUNT, FPP);
         //插入100万样本
         for (int i = 0; i < COUNT; i++) {

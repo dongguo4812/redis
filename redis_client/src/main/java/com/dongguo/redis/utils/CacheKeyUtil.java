@@ -14,6 +14,8 @@ public class CacheKeyUtil {
     public  static final String CACHE_TMALL_UV_KEY="redis:tmall:uv";
     public  static final String CACHE_HOTEL_KEY="redis:hotel";
     public  static final String CACHE_GAME_SIGN_KEY="redis:game:sign:";
+
+    public  static final String CACHE_WHITE_LIST_KEY="redis:white:list";
     public  static final String CACHE_JHS_KEY="redis:jhs";
     public  static final String CACHE_JHS_A_KEY="redis:jhs:a";
     public  static final String CACHE_JHS_B_KEY="redis:jhs:b";

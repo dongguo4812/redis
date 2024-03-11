@@ -20,7 +20,7 @@ public class GuavaBloomFilterDemo3 {
      * 误判率演示
      */
     public static void main(String[] args) {
-        //误判率设置为0.01
+
         BloomFilter<Integer> filter = BloomFilter.create(Funnels.integerFunnel(), COUNT);
         //插入100万样本
         for (int i = 0; i < COUNT; i++) {
