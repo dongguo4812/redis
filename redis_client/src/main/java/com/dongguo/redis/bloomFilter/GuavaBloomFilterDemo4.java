@@ -15,7 +15,7 @@ public class GuavaBloomFilterDemo4 {
     //布隆过滤器预计插入的元素数量为100W
     private static final int COUNT = 10000 * 100;
     //误判率  大于0小于1.0。值越小误判的个数也就越少
-    private static final double FPP = 0.03;
+    private static final double FPP = 0.01;
 
 
     /**
