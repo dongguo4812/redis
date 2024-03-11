@@ -31,12 +31,12 @@ public class JhsProductController {
      * 分页查询聚划算商品
      */
     @Operation(
-            summary = "分页查询聚划算商品",
+            summary = "findJhsProductPage",
             description = "分页查询聚划算商品，并返回响应结果信息"
 
     )
-    @GetMapping("/find")
-    public List<Product> findUser(@RequestParam(value = "page") int page,@RequestParam(value = "size") int size) {
-        return jhsProductService.findJhsProducts(page, size);
+    @GetMapping("/findJhsProductPage")
+    public List<Product> findJhsProductPage(@RequestParam(value = "page") int page,@RequestParam(value = "size") int size) {
+        return jhsProductService.findJhsProductPage(page, size);
     }
 }

@@ -23,15 +23,15 @@ public class JhsProductService {
     @Resource
     private RedisTemplate redisTemplate;
 
-    public List<Product> findJhsProducts(int page, int size) {
+    public List<Product> findJhsProductPage(int page, int size) {
         List productList = null;
         long start = (page - 1) * size;
         long end = start + size - 1;
         try {
             //查缓存
             productList = redisTemplate.opsForList().range(CACHE_JHS_KEY, start, end);
-            if (CollUtil.isEmpty(productList)) {
-                //不存在查数据库
+            if (CollUtil.isEmpty(productList)){
+                //可能查到的列表为空，说明正在重建缓存列表。需要查询数据库获取参加聚划算最新的商品列表,并将商品列表缓存到redis中
             }
         } catch (Exception e) {
             log.info("查询redis缓存失败 exception:" + e.getMessage());

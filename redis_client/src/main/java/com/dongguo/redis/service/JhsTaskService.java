@@ -7,7 +7,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +56,7 @@ public class JhsTaskService {
      */
     public List<Product> getProducts() {
         List<Product> productList = new ArrayList<>(20);
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 0; i < 20; i++) {
             Random random = new Random();
             //模拟生成id，随着定时任务的执行商品数不断增加
             long id = random.nextLong(10000);
