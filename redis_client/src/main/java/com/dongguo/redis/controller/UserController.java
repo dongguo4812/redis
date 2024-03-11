@@ -33,7 +33,7 @@ public class UserController {
     )
     @GetMapping("/findUser/{id}")
     public User findUser(@PathVariable(value = "id") Long id) {
-        return userService.findUser(id);
+        return userService.findUserV3(id);
     }
 
     /***

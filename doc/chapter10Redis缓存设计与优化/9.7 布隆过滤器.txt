@@ -1,0 +1,517 @@
+通常我们会遇到很多要判断一个元素是否在某个集合中的业务场景,一般想到的是将集合中所有元素保存起来,然后通过比较确定。链表、树、哈希表等等数据结构都是这种思路。
+
+但是随着集合中元素的增加,我们需要的存储空间也会呈现线性增长,最终达到瓶颈。同时检索速度也越来越慢，上述三种结构的检索时间复杂度分别为0(n)，O(logn)，0(1)，这个时候，布隆过滤器(Bloom Filter)就应运而生
+
+# 布隆过滤器
+
+布隆过滤器（英语：Bloom Filter）是 1970 年由布隆提出的。它实际上是一个很长的初始值都为0的二进制数组(00000000)加一系列随机hash算法映射函数，主要用于判断一个元素是否在集合中。然而，与标准的set数据结构相比，布隆过滤器的检索结果并不是完全准确的。
+
+当判断元素是否存在时，如果返回结果存在，实际中元素不一定真的存在；但如果返回不存在，则肯定不存在。
+
+因此，布隆过滤器在判断去重时有一定的误判概率。这种误判主要发生在过滤器没有添加过的元素上，而对于已经添加过的元素，布隆过滤器则不会发生误判。
+
+![image-20240310221253378](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403102213241.png)
+
+布隆过滤器可以添加元素，但是不能删除元素，因为设计hash值判断，删掉元素会增加误判率。
+
+## hash冲突导致数据不精准
+
+### 哈希碰撞
+
+哈希函数的概念是：将任意大小的输入数据转换成特定大小的输出数据的函数，转换后的数据称为哈希值或哈希编码，也叫散列值
+
+![image-20240311082033500](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110820636.png)
+
+如果两个散列值是不相同的（根据同一函数）那么这两个散列值的原始输入也是不相同的。
+
+这个特性是散列函数具有确定性的结果，具有这种性质的散列函数称为单向散列函数。
+
+散列函数的输入和输出不是唯一对应关系的，如果两个散列值相同，两个输入值很可能是相同的，但也可能不同，这种情况称为“散列碰撞(collision)”。
+
+用hash表存储大数据量时，空间效率还是很低，当只有一个hash函数时，还很容易发生哈希碰撞。
+
+
+
+**所以布隆过滤器采用多次hash函数，减少哈希碰撞的概率。**
+
+当有变量被加入集合时，通过N个映射函数将这个变量映射成位图中的N个点，把它们置为1（假定有两个变量都通过3个映射函数）。
+
+obj1第一次hash落到索引为1的位置，第二次hash落到索引为3的位置，第三次hash落到索引为12的位置。
+
+obj2第一次hash落到索引为3的位置，第二次hash落到索引为8的位置，第三次hash落到索引为13的位置。
+
+![](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110812827.png)
+
+查询某个变量的时候我们只要看看这些点是不是都是 1，如果这些点，有任何一个为零则被查询变量一定不在。如果都是 1，则被查询变量很可能存在，
+
+**为什么说是可能存在,而不是一定存在呢?**
+
+那是因为映射函数本身就是散列函数,散列函数是会有碰撞的。(见上图3号坑两个对象）
+
+正是基于布隆过滤器的快速检测特性,我们可以在把数据写入数据库时，使用布隆过滤器做个标记。当缓存缺失后,应用查询数据库时,可以通过查询布隆过滤器快速判断数据是否存在。如果不存在,就不用再去Redis缓存、数据库中查询了。可能存在，再去查Redis缓存、数据库。
+
+这样一来,即使发生缓存穿透了,大量请求只会查询Redis和布隆过滤器,而不会积压到数据库，也就不会影响数据库的正常运行。布隆过滤器可以使用Redis实现，本身就能承担较大的并发访问压力。
+
+### java中hash冲突的demo
+
+```java
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * @Author: Administrator
+ * @Date: 2024-02-26
+ * hash冲突demo
+ */
+public class HashCodeConflictDemo {
+    public static void main(String[] args) {
+        System.out.println("Aa".hashCode());//2112
+        System.out.println("BB".hashCode());//2112
+        System.out.println("柳柴".hashCode());//851553
+        System.out.println("柴柕".hashCode());//851553
+
+        Set<Integer> set = new HashSet<>();
+        for (int i = 0; i < 200000; i++) {
+            int hashCode = new Object().hashCode();
+            if (set.contains(hashCode)){
+                System.out.println("出现了重复的hashcode: "+hashCode+"\t 运行到"+i);//出现了重复的hashcode: 2134400190  运行到105488
+                break;
+            }
+            set.add(hashCode);
+        }
+    }
+}
+```
+
+## 原理
+
+### 初始化bitmap
+
+![image-20240311092016103](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110920220.png)
+
+### 添加key时
+
+当我们向布隆过滤器中添加数据时,为了尽量地址不冲突,会使用多个hash函数对key进行运算,算得一个下标索引值,然后对位数组长度进行取模运算得到一个位置,每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。
+
+例如，我们添加一个字符串wmyskxz，对字符串进行多次hash(key）→ 取模运行→ 得到坑位
+
+![image-20240311092229177](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110922170.png)
+
+### 查询key时
+
+查询布隆过滤器中	某个key是否存在时，先把这个key通过相同的多个hash函数进行运算，查看对应的位置是否都为1，只要有一个位为零，那么说明布隆过滤器中这个 key 不存在；如果这几个位置全都是 1，那么说明极有可能存在；因为这些位置的1可能是因为其他的key存在导致的,也就是前面说过的hash冲突。
+
+就比如我们在add了字符串wmyskxz数据之后，很明显下面1/3/5这几个位置的1是因为第一次添加的wmyskxz而导致的；
+
+![image-20240311092229177](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110922170.png)
+
+此时我们查询一个没添加过的不存在的字符串inexistent-key，它有可能计算后坑位也是1/3/5，这就是误判了。
+
+![image-20240311092417514](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110924544.png)
+
+## 布隆过滤器为什么不能删除元素？
+
+布隆过滤器的误判是指多个key经过哈希之后在相同的bit位置了，这样就无法判断1究竟是哪个key产生的，因此误判的根源在于相同的 bit 位被多次映射且置 1。
+
+这种情况也造成了布隆过滤器的删除问题,因为布隆过滤器的每一个bit并不是独占的,很有可能多个元素共享了某一位如果我们直接删除这一位的话，会影响其他的元素特性
+
+布隆过滤器可以添加元素，但是不能删除元素。因为删掉元素会导致误判率增加。
+
+## 布隆过滤器使用建议
+
+使用时最好不要让实际元素数量远大于初始化数量，最好一次给够避免频繁扩容。
+
+当实际元素数量超过初始化数量时,应该对布隆过滤器进行重建,重新分配一个 size 更大的过滤器，再将所有的历史元素批量 add 进重建的布隆过滤器。
+
+#### 优点
+
+高效的插入和查询，占用空间少。
+
+#### 缺点
+
+存在误判：不同的数据可能计算出相同的hash值。
+
+不能删除元素：删除元素会导致误判率增加，因为hash冲突，可能是多个元素共享某一位置，可能删除一个元素同时把其他的元素也删除了。
+
+## 使用场景
+
+### 1.解决缓存穿透
+
+**缓存穿透是什么**
+
+一般情况下,先查询缓存redis是否有该条数据,缓存中没有时,再查询数据库。当数据库也不存在该条数据时,每次查询都要访问数据库,这就是缓存穿透。
+
+缓存透带来的问题是，当有大量请求查询数据库不存在的数据时，就会给数据库带来压力，甚至会拖垮数据库。
+
+**可以使用布隆过滤器解决缓存穿透的问题**
+
+把已存在数据的key存在布隆过滤器中，相当于redis前面挡着一个布隆过滤器。
+
+当有新的请求时，先到布隆过滤器中查询是否存在：
+
+如果布隆过滤器中不存在该条数据则直接返回;
+
+如果布隆过滤器中已存在，才去查询缓存redis,如果redis里没查询到则再查询Mysql数据库。
+
+![image-20240311093933344](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110939647.png)
+
+### 2.垃圾邮件黑名单校验
+
+假设黑名单的数量是数以亿计的,存放起来就是非常耗费存储空间的,布隆过滤器则是一个较好的解决方案。
+
+把所有黑名单都放在布隆过滤器中,在收到邮件时,判断邮件地址是否在布隆过滤器中即可。
+
+# 使用布隆过滤器
+
+## Redis实现布隆过滤器
+
+![image-20240311094543244](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110945450.png)
+
+使用redis的bitmap，通过setbit和getbit命令实现布隆过滤器
+
+### 布隆过滤器构建过程：
+
+1.初始化符合条件的元素。
+
+2.通过hash值计算出对应的二级制数组的坑位
+
+3.将对应坑位的值修改为1
+
+### 查找元素是否存在的过程：
+
+1.计算元素的hash值
+
+2.通过hash值计算出对应的二级制数组的坑位
+
+3.返回对应坑位的值，0表示不存在，1表示存在
+
+
+
+我们在7.3 SpringBoot+Mybatis+Redis缓存实战redis_client项目查询用户信息时，findUser()存在缓存击穿的风险，当查询一个热点key时，缓存正好失效，大量请求打到数据库，可能导致数据库宕机，当时我们使用加锁的方式解决。
+
+```java
+/**
+     * 分布式锁
+     * @param id
+     * @return
+     */
+    public User findUserV2(Long id) {
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            String lockKey = CacheKeyUtil.CACHE_USER_LOCK_KEY + id;
+            Boolean tryLock = redisTemplate.opsForValue().setIfAbsent(lockKey, id, 100, TimeUnit.MINUTES);
+            if (tryLock) {
+                try {
+                    user = userMapper.selectByPrimaryKey(id);
+                    if (null == user) {
+                        return null;
+                    }
+                    redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+                } finally {
+                    redisTemplate.delete(lockKey);
+                }
+            }
+        }
+        return user;
+    }
+
+    /**
+     * 单机锁 双重校验
+     * @param id
+     * @return
+     */
+    public User findUserV3(Long id) {
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            synchronized (UserService.class){
+                user = (User) redisTemplate.opsForValue().get(Key);
+                if (null == user) {
+                    user = userMapper.selectByPrimaryKey(id);
+                    if (null == user) {
+                        return null;
+                    }
+                    redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+                }
+            }
+        }
+        return user;
+    }
+```
+
+但是也存在缓存穿透的问题，如果大量查询redis缓存和数据库都没有的数据，缓存中没有，大量请求打到数据库，也可能导致数据库宕机。接下来我们对上面的代码进一步的改造。
+
+1.数据库新增数据
+
+![image-20240311113714863](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403111137661.png)
+
+2.初始化布隆过滤器
+
+将所有用户在布隆过滤器中表示存在
+
+```java
+    /**
+     * 初始化布隆过滤器
+     */
+    @PostConstruct
+    public void initBloomFilter() {
+        //符合条件的元素。
+        List<User> userList = userMapper.selectAll();
+        userList.forEach(user -> {
+            String key = CACHE_USER_BLOOMFILTER_KEY + user.getId();
+            //计算hash值，可能存在负值，取绝对值。
+            int hashValue = Math.abs(key.hashCode());
+            //通过hash值计算出对应的二级制数组的坑位:hashValue 除以2的32次方的余数
+            long index = (long) (hashValue % Math.pow(2, 32));
+            log.info(key + "对应的index：{}", index);
+            //将对应坑位的值修改为1
+            redisTemplate.opsForValue().setBit(key, index, Boolean.TRUE);
+        });
+    }
+```
+
+3.修改查询方法
+
+```java
+    /**
+     * 单机锁 双重校验
+     *
+     * @param id
+     * @return
+     */
+    public User findUserV3(Long id) {
+        String bloomFilterKey = CacheKeyUtil.CACHE_USER_BLOOMFILTER_KEY + id;
+        //计算hash值，可能存在负值，取绝对值。
+        int hashValue = Math.abs(bloomFilterKey.hashCode());
+        //通过hash值计算出对应的二级制数组的坑位:hashValue 除以2的32次方的余数
+        long index = (long) (hashValue % Math.pow(2, 32));
+        Boolean exists = redisTemplate.opsForValue().getBit(bloomFilterKey, index);
+        if (!exists){
+            log.info("布隆过滤器中不存在id为{}的用户",id);
+            return null;
+        }
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            synchronized (UserService.class) {
+                user = (User) redisTemplate.opsForValue().get(Key);
+                if (null == user) {
+                    log.info("缓存中不存在id为{}的用户",id);
+                    user = userMapper.selectByPrimaryKey(id);
+                    if (null == user) {
+                        log.info("数据库中不存在id为{}的用户",id);
+                        return null;
+                    }
+                    redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+                }
+            }
+        }
+        return user;
+    }
+```
+
+项目启动：
+
+```java
+2024-03-11 11:37:52.021 [main] INFO  com.dongguo.redis.service.UserService- redis:user:bloomFilter:1对应的index：522454722
+2024-03-11 11:37:52.417 [main] INFO  com.dongguo.redis.service.UserService- redis:user:bloomFilter:2对应的index：522454723
+2024-03-11 11:37:52.734 [main] INFO  com.dongguo.redis.service.UserService- redis:user:bloomFilter:3对应的index：522454724
+2024-03-11 11:37:53.032 [main] INFO  com.dongguo.redis.service.UserService- redis:user:bloomFilter:4对应的index：522454725
+2024-03-11 11:37:53.320 [main] INFO  com.dongguo.redis.service.UserService- redis:user:bloomFilter:5对应的index：522454726
+```
+
+布隆过滤备器查询不存在的用户时，直接返回，不再查询redis和数据库。
+
+
+
+完整UserService：
+
+```java
+package com.dongguo.redis.service;
+
+import com.dongguo.redis.entity.User;
+import com.dongguo.redis.mapper.UserMapper;
+import com.dongguo.redis.utils.CacheKeyUtil;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_USER_BLOOMFILTER_KEY;
+
+@Service
+@Slf4j
+public class UserService {
+
+
+    @Resource
+    private UserMapper userMapper;
+
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    /**
+     * 初始化布隆过滤器
+     */
+    @PostConstruct
+    public void initBloomFilter() {
+        //符合条件的元素。
+        List<User> userList = userMapper.selectAll();
+        userList.forEach(user -> {
+            String key = CACHE_USER_BLOOMFILTER_KEY + user.getId();
+            //计算hash值，可能存在负值，取绝对值。
+            int hashValue = Math.abs(key.hashCode());
+            //通过hash值计算出对应的二级制数组的坑位:hashValue 除以2的32次方的余数
+            long index = (long) (hashValue % Math.pow(2, 32));
+            log.info(key + "对应的index：{}", index);
+            //将对应坑位的值修改为1
+            redisTemplate.opsForValue().setBit(key, index, Boolean.TRUE);
+        });
+    }
+
+    public void addUser(User user) {
+        int count = userMapper.insertSelective(user);
+        if (count > 0) {
+            String Key = CacheKeyUtil.CACHE_USER_KEY + user.getId();
+            redisTemplate.opsForValue().set(Key, user);
+        }
+    }
+
+    public void deleteUser(Long id) {
+        int count = userMapper.deleteByPrimaryKey(id);
+        if (count > 0) {
+            String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+            redisTemplate.delete(Key);
+        }
+    }
+
+    public void editUser(User user) {
+        User oldUser = userMapper.selectByPrimaryKey(user);
+        if (null == oldUser) {
+            return;
+        }
+        int count = userMapper.updateByPrimaryKey(user);
+        if (count > 0) {
+            String Key = CacheKeyUtil.CACHE_USER_KEY + user.getId();
+            redisTemplate.delete(Key);
+        }
+
+    }
+
+    public User findUser(Long id) {
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            user = userMapper.selectByPrimaryKey(id);
+            if (null == user) {
+                return null;
+            }
+            redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+        }
+        return user;
+    }
+
+    /**
+     * 分布式锁
+     *
+     * @param id
+     * @return
+     */
+    public User findUserV2(Long id) {
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            String lockKey = CacheKeyUtil.CACHE_USER_LOCK_KEY + id;
+            Boolean tryLock = redisTemplate.opsForValue().setIfAbsent(lockKey, id, 100, TimeUnit.MINUTES);
+            if (tryLock) {
+                try {
+                    user = userMapper.selectByPrimaryKey(id);
+                    if (null == user) {
+                        return null;
+                    }
+                    redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+                } finally {
+                    redisTemplate.delete(lockKey);
+                }
+            }
+        }
+        return user;
+    }
+
+    /**
+     * 单机锁 双重校验
+     *
+     * @param id
+     * @return
+     */
+    public User findUserV3(Long id) {
+        String bloomFilterKey = CacheKeyUtil.CACHE_USER_BLOOMFILTER_KEY + id;
+        //计算hash值，可能存在负值，取绝对值。
+        int hashValue = Math.abs(bloomFilterKey.hashCode());
+        //通过hash值计算出对应的二级制数组的坑位:hashValue 除以2的32次方的余数
+        long index = (long) (hashValue % Math.pow(2, 32));
+        Boolean exists = redisTemplate.opsForValue().getBit(bloomFilterKey, index);
+        if (!exists){
+            log.info("布隆过滤器中不存在id为{}的用户",id);
+            return null;
+        }
+        String Key = CacheKeyUtil.CACHE_USER_KEY + id;
+        User user = (User) redisTemplate.opsForValue().get(Key);
+        if (null == user) {
+            synchronized (UserService.class) {
+                user = (User) redisTemplate.opsForValue().get(Key);
+                if (null == user) {
+                    log.info("缓存中不存在id为{}的用户",id);
+                    user = userMapper.selectByPrimaryKey(id);
+                    if (null == user) {
+                        log.info("数据库中不存在id为{}的用户",id);
+                        return null;
+                    }
+                    redisTemplate.opsForValue().set(Key, user, 1000, TimeUnit.MINUTES);
+                }
+            }
+        }
+        return user;
+    }
+}
+```
+
+
+
+## Guava布隆过滤器
+
+白名单过滤
+
+
+
+黑名单过滤
+
+
+
+## Redis布隆过滤器
+
+
+
+
+
+## 布谷鸟过滤器
+
+为了解决布隆过滤器不能删除元素的问题，布谷鸟过滤器横空出世。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
