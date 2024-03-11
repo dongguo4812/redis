@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -35,7 +36,7 @@ public class JhsProductController {
 
     )
     @GetMapping("/find")
-    public List<Product> findUser(int page, int size) {
+    public List<Product> findUser(@RequestParam(value = "page") int page,@RequestParam(value = "size") int size) {
         return jhsProductService.findJhsProducts(page, size);
     }
 }

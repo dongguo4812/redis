@@ -35,8 +35,9 @@ public class JhsTaskService {
                 //删除缓存数据
                 redisTemplate.delete(CACHE_JHS_KEY);
                 //将最新获取到的聚划算商品缓存到redis
-                redisTemplate.opsForList().leftPushAll(CACHE_JHS_KEY, productList, 20, TimeUnit.DAYS);
-
+                redisTemplate.opsForList().leftPushAll(CACHE_JHS_KEY, productList);
+                //设置过期时间
+                redisTemplate.expire(CACHE_JHS_KEY, 1, TimeUnit.DAYS);
                 log.info("定时任务 淘宝聚划算功能获取商品列表 已刷新");
                 //模拟定时。间隔1分钟重新获取最新的聚划算商品
                 try {
