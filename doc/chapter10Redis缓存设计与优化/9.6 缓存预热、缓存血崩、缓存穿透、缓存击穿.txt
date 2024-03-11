@@ -75,7 +75,7 @@ hystrix或者sentinel限流 、降级确保核心功能的可用性
 
 使用布隆过滤器能够对访问的请求起到了一定的初筛作用，避免了因数据不存在引起的查询压力。
 
-![image-20240311103327346](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403111033075.png)
+![image-20240311123518513](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403111236668.png)
 
 # 缓存击穿(Hotspot Invalid)
 

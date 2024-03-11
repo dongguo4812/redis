@@ -1,6 +1,6 @@
 通常我们会遇到很多要判断一个元素是否在某个集合中的业务场景,一般想到的是将集合中所有元素保存起来,然后通过比较确定。链表、树、哈希表等等数据结构都是这种思路。
 
-但是随着集合中元素的增加,我们需要的存储空间也会呈现线性增长,最终达到瓶颈。同时检索速度也越来越慢，上述三种结构的检索时间复杂度分别为0(n)，O(logn)，0(1)，这个时候，布隆过滤器(Bloom Filter)就应运而生
+上述三种结构的检索时间复杂度分别为0(n)，O(logn)，0(1)，少量数据时，我们可以选择set。但是随着集合中元素的增加,我们需要的存储空间也会呈现线性增长,最终达到瓶颈。同时检索速度也越来越慢，这个时候，布隆过滤器(Bloom Filter)就应运而生
 
 # 布隆过滤器
 
@@ -153,6 +153,8 @@ public class HashCodeConflictDemo {
 
 如果布隆过滤器中已存在，才去查询缓存redis,如果redis里没查询到则再查询Mysql数据库。
 
+
+
 ![image-20240311093933344](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110939647.png)
 
 ### 2.垃圾邮件黑名单校验
@@ -165,9 +167,9 @@ public class HashCodeConflictDemo {
 
 ## Redis实现布隆过滤器
 
-![image-20240311094543244](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110945450.png)
+Redis 并不直接支持布隆过滤器,使用redis的bitmap，通过setbit和getbit命令实现布隆过滤器
 
-使用redis的bitmap，通过setbit和getbit命令实现布隆过滤器
+![image-20240311094543244](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403110945450.png)
 
 ### 布隆过滤器构建过程：
 
@@ -483,33 +485,54 @@ public class UserService {
 
 ## Guava布隆过滤器
 
+Guava布隆过滤器是Google Guava库提供的一种数据结构，它基于布隆过滤器（Bloom Filter）的概念实现。
+
+在Guava中，可以通过创建`BloomFilter`对象来使用布隆过滤器。创建时需要传入一个`Funnel`对象（用于定义元素的类型）、预估的元素个数以及期望的误判率。然后可以向过滤器中插入元素，并检查一个元素是否在过滤器中。
+
+### 引入guava依赖
+
+```xml
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+</dependency>
+```
+
+
+
+
+
+Guava提供的布隆过滤器的实现还是很不错的 ,但是它有一个重大的缺陷就是只能单机使用而现在互联网一般都是分布式的场景。
+
+分布式项目就要使用Redisson利用Redis实现了Java分布式的布隆过滤器
+
+## Redisson布隆过滤器
+
+Redisson布隆过滤器是Redisson库提供的一种分布式布隆过滤器实现，它基于Redis作为底层存储，利用Redis的位操作功能来高效地实现布隆过滤器的功能。
+
+
+
+
+
 白名单过滤
 
-
+![image-20240311125444664](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403111254097.png)
 
 黑名单过滤
 
+![image-20240311125453749](https://gitee.com/dongguo4812_admin/image/raw/master/image/202403111254693.png)
 
-
-## Redis布隆过滤器
-
-
-
-
+redisson布隆过滤器不支持删除已经添加的元素。
 
 ## 布谷鸟过滤器
 
 为了解决布隆过滤器不能删除元素的问题，布谷鸟过滤器横空出世。
 
+布谷鸟过滤器的核心思想是使用两个或多个哈希函数，当插入一个新元素时，会尝试将其哈希到多个位置。如果某个位置已经被占用，就会将原有的元素“挤掉”，并将其重新哈希到其他位置。这个过程类似于布谷鸟的寄生繁殖策略，因此得名布谷鸟过滤器。
 
+布谷鸟过滤器支持删除操作。删除时，需要找到元素的所有哈希位置并将它们清空。
 
-
-
-
-
-
-
-
+布谷鸟过滤器通常会设计一种特殊的哈希函数，这个函数可以根据元素的第一个哈希位置计算出第二个哈希位置。通过这个哈希函数能够定位元素的存储位置.
 
 
 
