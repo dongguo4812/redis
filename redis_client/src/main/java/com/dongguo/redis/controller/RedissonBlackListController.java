@@ -20,10 +20,10 @@ public class RedissonBlackListController {
     private RedissonBlackListService redissonBlackListService;
 
     @Operation(
-            summary = "/videoRecommendation",
+            summary = "videoRecommendation",
             description = "视频推荐"
     )
-    @PostMapping("/videoRecommendation”/{videoId}")
+    @PostMapping("/videoRecommendation/{videoId}")
     public String login(@PathVariable("videoId") String videoId) {
         return redissonBlackListService.videoRecommendation(videoId);
     }
