@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 @Configuration
 @Slf4j
 public class GuavaBloomFilterConfig {
-    //布隆过滤器预计插入的元素数量为100W
-    private static final int COUNT = 10000 * 100;
+    //布隆过滤器预计插入的元素数量
+    private static final int COUNT = 1000;
     //误判率  大于0小于1.0。值越小误判的个数也就越少
     private static final double FPP = 0.03;
     @Bean
