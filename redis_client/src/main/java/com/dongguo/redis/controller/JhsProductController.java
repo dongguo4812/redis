@@ -37,6 +37,6 @@ public class JhsProductController {
     )
     @GetMapping("/findJhsProductPage")
     public List<Product> findJhsProductPage(@RequestParam(value = "page") int page,@RequestParam(value = "size") int size) {
-        return jhsProductService.findJhsProductPage2(page, size);
+        return jhsProductService.findJhsProductPage3(page, size);
     }
 }

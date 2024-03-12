@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_JHS_KEY;
+import static com.dongguo.redis.utils.CacheKeyUtil.*;
 
 /**
  * @Author: Administrator
@@ -32,11 +32,24 @@ public class JhsTaskService {
             while (true) {
                 List<Product> productList = getProducts();
                 //删除缓存数据
+                redisTemplate.delete(CACHE_JHS_B_KEY);
+                //将最新获取到的聚划算商品缓存到redis
+                redisTemplate.opsForList().leftPushAll(CACHE_JHS_B_KEY, productList);
+                //设置过期时间
+                redisTemplate.expire(CACHE_JHS_B_KEY, 2, TimeUnit.DAYS);
+
+                //保证删除缓存B时，缓存A还能够命中,删除缓存A时，缓存B已经重建
+                redisTemplate.delete(CACHE_JHS_A_KEY);
+                redisTemplate.opsForList().leftPushAll(CACHE_JHS_A_KEY, productList);
+                //设置过期时间
+                redisTemplate.expire(CACHE_JHS_A_KEY, 1, TimeUnit.DAYS);
+              /**
+                //删除缓存数据
                 redisTemplate.delete(CACHE_JHS_KEY);
                 //将最新获取到的聚划算商品缓存到redis
-//                redisTemplate.opsForList().leftPushAll(CACHE_JHS_KEY, productList);
+                redisTemplate.opsForList().leftPushAll(CACHE_JHS_KEY, productList);
                 //设置过期时间
-//                redisTemplate.expire(CACHE_JHS_KEY, 1, TimeUnit.DAYS);
+                redisTemplate.expire(CACHE_JHS_KEY, 1, TimeUnit.DAYS); **/
                 log.info("定时任务 淘宝聚划算功能获取商品列表 已刷新");
                 //模拟定时。间隔1分钟重新获取最新的聚划算商品
                 try {
