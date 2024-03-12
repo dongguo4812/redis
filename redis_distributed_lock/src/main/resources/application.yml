@@ -3,12 +3,14 @@ server:
 spring:
   application:
     name: redis_distributed_lock
-  # ========================redis\u76F8\u5173\u914D\u7F6E=====================
+  # ========================redis相关配置=====================
   data:
     redis:
-      host: 192.168.122.131
+#      host: 192.168.122.131
+      host: 127.0.0.1
       port: 6379
       password: root
+
 # ========================swagger=====================
 springdoc:
   swagger-ui:
