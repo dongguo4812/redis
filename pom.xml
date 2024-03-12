@@ -11,7 +11,8 @@
         <module>redis_client</module>
         <module>springboot_redis</module>
         <module>redis_lock1</module>
-        <module>redis_lock2</module>
+        <module>redis_distributed_lock</module>
+        <module>redis_core</module>
     </modules>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

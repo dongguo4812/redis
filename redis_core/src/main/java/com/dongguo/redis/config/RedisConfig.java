@@ -1,31 +1,19 @@
 package com.dongguo.redis.config;
 
-import io.lettuce.core.TimeoutOptions;
-import io.lettuce.core.cluster.ClusterClientOptions;
-import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
-import io.lettuce.core.resource.ClientResources;
-import io.lettuce.core.resource.DefaultClientResources;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisClusterConfiguration;
-import org.springframework.data.redis.connection.RedisPassword;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.io.Serializable;
-import java.time.Duration;
 
 /**
  * redis序列化工具类
  */
 
 @Configuration
-@Slf4j
 public class RedisConfig {
 
 

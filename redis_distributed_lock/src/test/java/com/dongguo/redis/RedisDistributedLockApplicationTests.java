@@ -1,13 +1,13 @@
-package com.dongguo.lock;
+package com.dongguo.redis;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class RedisLock2ApplicationTests {
+class RedisDistributedLockApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+	@Test
+	void contextLoads() {
+	}
 
 }
