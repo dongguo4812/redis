@@ -1,0 +1,11 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: redis_distributed_lock
+  # ========================redis\u76F8\u5173\u914D\u7F6E=====================
+  data:
+    redis:
+      host: 192.168.122.131
+      port: 6379
+      password: root
