@@ -9,7 +9,7 @@ import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_TMALL_UV_KEY;
 
 @Service
 @Slf4j
-public class TmallUniqueVisitorsService {
+public class TmallUVService {
     @Resource
     private RedisTemplate redisTemplate;
 

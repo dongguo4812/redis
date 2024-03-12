@@ -1,6 +1,6 @@
 package com.dongguo.redis.controller;
 
-import com.dongguo.redis.service.TmallUniqueVisitorsService;
+import com.dongguo.redis.service.TmallUVService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -9,19 +9,19 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/tmallUV")
 @Tag(
-        name = "TmallUniqueVisitorsController",
+        name = "TmallUVController",
         description = "天猫UV控制器接口")
-public class TmallUniqueVisitorsController {
+public class TmallUVController {
 
     @Resource
-    private TmallUniqueVisitorsService tmallUniqueVisitorsService;
+    private TmallUVService tmallUVService;
     @Operation(
             summary = "addUV",
             description = "新增UV"
     )
     @PostMapping("/addUV")
     public void addUV() {
-        tmallUniqueVisitorsService.addUV();
+        tmallUVService.addUV();
     }
 
     @Operation(
@@ -30,6 +30,6 @@ public class TmallUniqueVisitorsController {
     )
     @GetMapping("/getUV")
     public Long getUV() {
-        return tmallUniqueVisitorsService.getUV();
+        return tmallUVService.getUV();
     }
 }

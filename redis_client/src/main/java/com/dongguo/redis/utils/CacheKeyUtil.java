@@ -5,7 +5,7 @@ package com.dongguo.redis.utils;
  */
 public class CacheKeyUtil {
 
-    public static final String ORDER_KEY = "order:";
+    public static final String CACHE_ORDER_KEY = "redis:order:";
     public  static final String CACHE_USER_KEY="redis:user:";
     public  static final String CACHE_USER_LOCK_KEY="redis:user:lock:";
     public  static final String CACHE_USER_BLOOMFILTER_KEY="redis:user:bloomFilter:";
