@@ -9,3 +9,8 @@ spring:
       host: 192.168.122.131
       port: 6379
       password: root
+# ========================swagger=====================
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
