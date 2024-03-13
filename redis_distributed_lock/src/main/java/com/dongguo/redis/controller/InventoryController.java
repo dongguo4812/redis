@@ -38,6 +38,6 @@ public class InventoryController {
     )
     @GetMapping("/saleTicket")
     public String saleTicket() {
-        return inventoryService.saleTicketV4();
+        return inventoryService.saleTicketV6();
     }
 }

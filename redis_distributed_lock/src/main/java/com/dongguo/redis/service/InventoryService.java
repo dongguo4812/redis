@@ -5,8 +5,11 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_KEY;
@@ -163,6 +166,89 @@ public class InventoryService {
             }
         } finally {
             redisTemplate.delete(lockKey);
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * 判断是否是自己加的锁，再释放锁
+     *
+     * @return
+     */
+    public String saleTicketV5() {
+        String key = CACHE_INVENTORY_KEY;
+        String lockKey = CACHE_INVENTORY_LOCK_KEY;
+        String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
+        //获取不到锁，自旋
+        while (!redisTemplate.opsForValue().setIfAbsent(lockKey, value, 30, TimeUnit.SECONDS)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(20);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            //判断是自己上的锁，才释放锁
+            if (value.equals(redisTemplate.opsForValue().get(key))) {
+                redisTemplate.delete(lockKey);
+            }
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * lua脚本实现判断是否是自己上的锁和删除锁是一个原子操作。
+     *
+     * @return
+     */
+    public String saleTicketV6() {
+        String key = CACHE_INVENTORY_KEY;
+        String lockKey = CACHE_INVENTORY_LOCK_KEY;
+        String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
+        //获取不到锁，自旋
+        while (!redisTemplate.opsForValue().setIfAbsent(lockKey, value, 30, TimeUnit.SECONDS)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(20);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            String luaScript =
+                    "if redis.call('get',KEYS[1]) == ARGV[1] then " +
+                            "return redis.call('del',KEYS[1]) " +
+                            "else " +
+                            "return 0 " +
+                            "end";
+            redisTemplate.execute(new DefaultRedisScript(luaScript, Long.class), Collections.singletonList(lockKey), value);
         }
         return "端口号：" + port + " 售票失败，库存为0";
     }
