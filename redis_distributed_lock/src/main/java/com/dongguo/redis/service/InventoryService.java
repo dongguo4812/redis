@@ -25,16 +25,18 @@ public class InventoryService {
     }
 
     public synchronized String saleTicket() {
-        String message;
+
+        //查询库存信息
         Object obj = redisTemplate.opsForValue().get(CACHE_INVENTORY_KEY);
         if (null != obj) {
-            Integer inventory = (Integer) obj;
+            int inventory = (Integer) obj;
+            //判断库存是否足够
             if (inventory > 0) {
+                //扣减库存，减1
                 inventory -= 1;
                 redisTemplate.opsForValue().set(CACHE_INVENTORY_KEY, inventory);
                 log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
-                message = "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
-                return message;
+                return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
             }
         }
         return "端口号：" + port + " 售票失败，库存为0";
