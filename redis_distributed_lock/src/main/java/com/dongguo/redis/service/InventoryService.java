@@ -24,7 +24,29 @@ public class InventoryService {
         redisTemplate.opsForValue().set(CACHE_INVENTORY_KEY, 100);
     }
 
+    /**
+     * 单机锁解决超卖问题，分布式高并发场景下出现超卖现场
+     * @return
+     */
     public synchronized String saleTicket() {
+
+        //查询库存信息
+        Object obj = redisTemplate.opsForValue().get(CACHE_INVENTORY_KEY);
+        if (null != obj) {
+            int inventory = (Integer) obj;
+            //判断库存是否足够
+            if (inventory > 0) {
+                //扣减库存，减1
+                inventory -= 1;
+                redisTemplate.opsForValue().set(CACHE_INVENTORY_KEY, inventory);
+                log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+            }
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    public String saleTicketV2() {
 
         //查询库存信息
         Object obj = redisTemplate.opsForValue().get(CACHE_INVENTORY_KEY);
