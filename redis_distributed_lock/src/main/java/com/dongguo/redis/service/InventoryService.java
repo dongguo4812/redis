@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
 import java.util.concurrent.TimeUnit;
+
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_KEY;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_LOCK_KEY;
 
@@ -52,6 +54,8 @@ public class InventoryService {
 
     /**
      * redis分布式锁解决分布式场景超卖问题
+     * 递归调用存在栈溢出风险
+     *
      * @return
      */
     public String saleTicketV2() {
@@ -59,14 +63,89 @@ public class InventoryService {
         String lockKey = CACHE_INVENTORY_LOCK_KEY;
         String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
         Boolean absent = redisTemplate.opsForValue().setIfAbsent(lockKey, value);
-        if (!absent) {
+        while (!absent) {
             //获取不到锁，进行重试
             try {
                 TimeUnit.MILLISECONDS.sleep(20);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            saleTicketV2();
+            return saleTicketV2();
+        }
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * 自旋代替递归
+     *
+     * @return
+     */
+    public String saleTicketV3() {
+        String key = CACHE_INVENTORY_KEY;
+        String lockKey = CACHE_INVENTORY_LOCK_KEY;
+        String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
+        //获取不到锁，自旋
+        while (!redisTemplate.opsForValue().setIfAbsent(lockKey, value)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(20);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * 分布式锁设置过期时间
+     * 注意加锁和设置过期时间要保证原子性
+     *
+     * @return
+     */
+    public String saleTicketV4() {
+        String key = CACHE_INVENTORY_KEY;
+        String lockKey = CACHE_INVENTORY_LOCK_KEY;
+        String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
+        //获取不到锁，自旋
+        while (!redisTemplate.opsForValue().setIfAbsent(lockKey, value, 30, TimeUnit.SECONDS)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(20);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
         try {
             //查询库存信息

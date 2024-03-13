@@ -10,5 +10,4 @@ public class RedisDistributedLockApplication {
 		SpringApplication.run(RedisDistributedLockApplication.class, args);
 		System.out.println("http://127.0.0.1:8081/swagger-ui.html");
 	}
-
 }
