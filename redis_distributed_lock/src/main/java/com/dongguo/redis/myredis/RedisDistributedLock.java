@@ -56,7 +56,7 @@ public class RedisDistributedLock implements Lock {
                         "end";
         while (!redisTemplate.execute(new DefaultRedisScript<>(script, Boolean.class), Arrays.asList(key), value, String.valueOf(expire))) {
             try {
-                TimeUnit.MILLISECONDS.sleep(50);
+                TimeUnit.MILLISECONDS.sleep(10);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
