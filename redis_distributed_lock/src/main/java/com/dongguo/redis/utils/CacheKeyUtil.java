@@ -7,5 +7,7 @@ package com.dongguo.redis.utils;
 public class CacheKeyUtil {
     public  static final String CACHE_INVENTORY_KEY="redis:inventory";
     public  static final String CACHE_INVENTORY_LOCK_KEY="redis:inventory:lock";
+
+    public  static final String ZOOKEEPER_INVENTORY_LOCK_KEY="zookeeper:inventory:lock";
     public  static final String CACHE_REDISSON_LOCK_KEY="redisson:lock";
 }

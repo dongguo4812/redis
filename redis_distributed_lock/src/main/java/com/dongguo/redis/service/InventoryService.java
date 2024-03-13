@@ -1,6 +1,8 @@
 package com.dongguo.redis.service;
 
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.IdUtil;
+import com.dongguo.redis.myredis.DistributedLockFactory;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_KEY;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_LOCK_KEY;
@@ -26,6 +29,9 @@ public class InventoryService {
     private Integer port;
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private DistributedLockFactory distributedLockFactory;
 
     public void initInventory() {
         //初始化库存100
@@ -218,7 +224,7 @@ public class InventoryService {
     public String saleTicketV6() {
         String key = CACHE_INVENTORY_KEY;
         String lockKey = CACHE_INVENTORY_LOCK_KEY;
-        String value = UUID.fastUUID() + ":" + Thread.currentThread().getId();
+        String value = IdUtil.fastUUID() + ":" + Thread.currentThread().getId();
         //获取不到锁，自旋
         while (!redisTemplate.opsForValue().setIfAbsent(lockKey, value, 30, TimeUnit.SECONDS)) {
             try {
@@ -248,7 +254,35 @@ public class InventoryService {
                             "else " +
                             "return 0 " +
                             "end";
-            redisTemplate.execute(new DefaultRedisScript(luaScript, Long.class), Collections.singletonList(lockKey), value);
+            redisTemplate.execute(new DefaultRedisScript(luaScript, Boolean.class), Collections.singletonList(lockKey), value);
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * lua脚本实现分布式锁可重入性
+     * @return
+     */
+    public String saleTicketV7() {
+        String key = CACHE_INVENTORY_KEY;
+        Lock redisLock = distributedLockFactory.getDistributedLock("redis");
+        redisLock.lock();
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            redisLock.unlock();
         }
         return "端口号：" + port + " 售票失败，库存为0";
     }
