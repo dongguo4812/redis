@@ -1,5 +1,8 @@
 package com.dongguo.redis.config;
 
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -42,8 +45,11 @@ public class RedisConfig {
     public DefaultClientResources lettuceClientResources() {
         return DefaultClientResources.create();
     }
-    *//**
-     *定时扫描Redis集群的拓扑变化，自动更新本地的节点信息。
+    */
+
+    /**
+     * 定时扫描Redis集群的拓扑变化，自动更新本地的节点信息。
+     *
      * @return
      *//*
     @Bean
@@ -67,5 +73,18 @@ public class RedisConfig {
 
         return new LettuceConnectionFactory(clusterConfig, clientConfiguration);
     }*/
+
+    /**
+     * 单机配置
+     * @return
+     */
+    @Bean
+    public Redisson redisson() {
+        Config config = new Config();
+        config.useSingleServer()
+                // use "rediss://" for SSL connection
+                .setAddress("redis://192.168.122.131:6379").setPassword("root");
+        return (Redisson) Redisson.create(config);
+    }
 }
 

@@ -5,13 +5,17 @@ import cn.hutool.core.util.IdUtil;
 import com.dongguo.redis.myredis.DistributedLockFactory;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_KEY;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_LOCK_KEY;
 import static com.dongguo.redis.utils.CommonConst.REDIS;
@@ -259,6 +263,7 @@ public class InventoryService {
 
     /**
      * lua脚本实现分布式锁可重入性
+     *
      * @return
      */
     public String saleTicketV7() {
@@ -300,6 +305,7 @@ public class InventoryService {
 
     /**
      * 实现自动续期
+     *
      * @return
      */
     public String saleTicketV8() {
@@ -328,6 +334,79 @@ public class InventoryService {
             }
         } finally {
             redisLock.unlock();
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    @Resource
+    private Redisson redisson;
+
+    /**
+     * Redisson实现分布式锁
+     *
+     * @return
+     */
+    public String saleTicketByRedisson() {
+        String key = CACHE_INVENTORY_KEY;
+        RLock lock = redisson.getLock(CACHE_INVENTORY_LOCK_KEY);
+        lock.lock(30, TimeUnit.SECONDS);
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    try {
+                        TimeUnit.SECONDS.sleep(50);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            if (lock != null && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    /**
+     * Redisson自动续期
+     *
+     * @return
+     */
+    public String saleTicketByRedissonV2() {
+        String key = CACHE_INVENTORY_KEY;
+        RLock lock = redisson.getLock(CACHE_INVENTORY_LOCK_KEY);
+        lock.lock();
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    try {
+                        TimeUnit.SECONDS.sleep(50);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            lock.unlock();
         }
         return "端口号：" + port + " 售票失败，库存为0";
     }
