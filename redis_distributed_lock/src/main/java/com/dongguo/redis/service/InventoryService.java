@@ -297,4 +297,38 @@ public class InventoryService {
             redisLock.unlock();
         }
     }
+
+    /**
+     * 实现自动续期
+     * @return
+     */
+    public String saleTicketV8() {
+        String key = CACHE_INVENTORY_KEY;
+        Lock redisLock = distributedLockFactory.getDistributedLock(REDIS);
+        redisLock.lock();
+        try {
+            //查询库存信息
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (null != obj) {
+                int inventory = (Integer) obj;
+                //判断库存是否足够
+                if (inventory > 0) {
+                    //扣减库存，减1
+                    inventory -= 1;
+                    redisTemplate.opsForValue().set(key, inventory);
+                    //业务执行时间超过超时时间
+                    try {
+                        TimeUnit.SECONDS.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                    return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                }
+            }
+        } finally {
+            redisLock.unlock();
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
 }

@@ -3,7 +3,10 @@ package com.dongguo.redis.myredis;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+
 import java.util.Collections;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -18,7 +21,7 @@ public class RedisDistributedLock implements Lock {
     private RedisTemplate redisTemplate;
     private String key;
     private String value;
-    private Integer expire;
+    private Long expire;
 
     /**
      * 默认过期时间30秒
@@ -32,7 +35,7 @@ public class RedisDistributedLock implements Lock {
         this.key = key;
         //同一个实例uuid相同，不同线程对应不同的ThreadId
         this.value = uuid + ":" + Thread.currentThread().getId();
-        this.expire = 30;
+        this.expire = 30L;
     }
 
     /**
@@ -66,7 +69,7 @@ public class RedisDistributedLock implements Lock {
     @Override
     public boolean tryLock(long time, TimeUnit unit) {
         //将过期时间转换为秒
-        long expire = unit.toSeconds(time);
+        this.expire = unit.toSeconds(time);
         String script =
                 "if redis.call('exists', KEYS[1]) == 0 or redis.call('hexists', KEYS[1], ARGV[1]) == 1 then  " +
                         "    redis.call('hincrby', KEYS[1], ARGV[1], 1)  " +
@@ -83,7 +86,31 @@ public class RedisDistributedLock implements Lock {
             }
         }
         log.info("lock()   key:{}, value:{}", key, value);
+
+        //新建一个后台扫描程序，监测key的过期时间，每过expire/3,实现续期expire
+        reExpire();
         return true;
+    }
+
+    private void reExpire() {
+        String script =
+                "if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then  " +
+                        "    return redis.call('expire', KEYS[1], ARGV[2])  " +
+                        "else  " +
+                        "    return 0  " +
+                        "end";
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if ((Boolean) redisTemplate.execute(new DefaultRedisScript<>(script, Boolean.class), Collections.singletonList(key), value, expire)) {
+                    log.info("自动续期  key:{}, value:{}", key, value);
+                    reExpire();
+                }
+                //key不存在，退出定时任务
+                cancel();
+            }
+            //延迟时间 毫秒
+        }, (this.expire * 1000) / 3);
     }
 
     /**
