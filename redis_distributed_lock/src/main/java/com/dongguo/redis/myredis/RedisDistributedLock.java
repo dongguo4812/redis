@@ -31,6 +31,7 @@ public class RedisDistributedLock implements Lock {
     }
 
     /**
+     * 加锁方法
      * 阻塞方法。如果当前线程未持有锁，它会一直等待，直到获取到锁为止。
      * 这里简化lock方法直接调用tryLock方法
      */
@@ -40,6 +41,7 @@ public class RedisDistributedLock implements Lock {
     }
 
     /**
+     * 真正调用的加锁方法
      * 非阻塞方法。如果当前线程能够立即获取到锁，则返回true；如果锁被其他线程持有，则立即返回false
      *
      * @return
@@ -70,6 +72,9 @@ public class RedisDistributedLock implements Lock {
         return false;
     }
 
+    /**
+     * 解锁方法
+     */
     @Override
     public void unlock() {
         String script =
