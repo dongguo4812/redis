@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_KEY;
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_INVENTORY_LOCK_KEY;
+import static com.dongguo.redis.utils.CommonConst.REDIS;
 
 /**
  * @Author: Administrator
@@ -262,9 +263,10 @@ public class InventoryService {
      */
     public String saleTicketV7() {
         String key = CACHE_INVENTORY_KEY;
-        Lock redisLock = distributedLockFactory.getDistributedLock("redis");
+        Lock redisLock = distributedLockFactory.getDistributedLock(REDIS);
         redisLock.lock();
         try {
+
             //查询库存信息
             Object obj = redisTemplate.opsForValue().get(key);
             if (null != obj) {
@@ -274,6 +276,8 @@ public class InventoryService {
                     //扣减库存，减1
                     inventory -= 1;
                     redisTemplate.opsForValue().set(key, inventory);
+                    reEntryTest();
+
                     log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
                     return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
                 }
@@ -282,5 +286,15 @@ public class InventoryService {
             redisLock.unlock();
         }
         return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    private void reEntryTest() {
+        Lock redisLock = distributedLockFactory.getDistributedLock(REDIS);
+        redisLock.lock();
+        try {
+            log.info("==============测试可重入性===============");
+        } finally {
+            redisLock.unlock();
+        }
     }
 }
