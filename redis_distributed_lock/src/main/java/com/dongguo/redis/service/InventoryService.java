@@ -434,7 +434,7 @@ public class InventoryService {
         try {
             //waitTime:3 抢锁的等待时间3秒
             //leaseTime:30 key的过期时间30秒
-            if (redLock.tryLock(3, 30, TimeUnit.SECONDS)) {
+            if (redLock.tryLock()) {
                 log.info("端口号：{}，线程：{}，抢到锁了", port, Thread.currentThread().getId());
                 //查询库存信息
                 Object obj = redisTemplate.opsForValue().get(key);
