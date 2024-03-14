@@ -6,7 +6,9 @@ import com.dongguo.redis.myredis.DistributedLockFactory;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
+import org.redisson.RedissonRedLock;
 import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -407,6 +409,55 @@ public class InventoryService {
             }
         } finally {
             lock.unlock();
+        }
+        return "端口号：" + port + " 售票失败，库存为0";
+    }
+
+    @Resource
+    private RedissonClient redissonClient1;
+    @Resource
+    private RedissonClient redissonClient2;
+    @Resource
+    private RedissonClient redissonClient3;
+
+    /**
+     * Redisson RedLock
+     *
+     * @return
+     */
+    public String saleTicketByRedissonV3() {
+        String key = CACHE_INVENTORY_KEY;
+        RLock lock1 = redissonClient1.getLock(CACHE_INVENTORY_LOCK_KEY);
+        RLock lock2 = redissonClient2.getLock(CACHE_INVENTORY_LOCK_KEY);
+        RLock lock3 = redissonClient3.getLock(CACHE_INVENTORY_LOCK_KEY);
+        RedissonRedLock redLock = new RedissonRedLock(lock1, lock2, lock3);
+        try {
+            //waitTime:3 抢锁的等待时间3秒
+            //leaseTime:30 key的过期时间30秒
+            if (redLock.tryLock(3, 30, TimeUnit.SECONDS)) {
+                log.info("端口号：{}，线程：{}，抢到锁了", port, Thread.currentThread().getId());
+                //查询库存信息
+                Object obj = redisTemplate.opsForValue().get(key);
+                if (null != obj) {
+                    int inventory = (Integer) obj;
+                    //判断库存是否足够
+                    if (inventory > 0) {
+                        //扣减库存，减1
+                        inventory -= 1;
+                        redisTemplate.opsForValue().set(key, inventory);
+                        log.info("端口号：{} 售出一张票，还剩下{}张票", port, inventory);
+                        //模拟业务执行时间超过了锁的过期时间
+                        TimeUnit.SECONDS.sleep(100);
+                        return "端口号：" + port + " 售出一张票，还剩下" + inventory + "张票";
+                    }
+                }
+            } else {
+                log.info("端口号：{},线程{}，没有抢到锁", port, Thread.currentThread().getId());
+            }
+        } catch (Exception e) {
+            log.error("RedLock error:{}", e);
+        } finally {
+            redLock.unlock();
         }
         return "端口号：" + port + " 售票失败，库存为0";
     }
