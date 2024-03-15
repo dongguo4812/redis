@@ -12,6 +12,7 @@
         <module>springboot_redis</module>
         <module>redis_distributed_lock</module>
         <module>redis_core</module>
+        <module>redis_canal</module>
     </modules>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -36,6 +37,8 @@
         <mysql.version>8.0.28</mysql.version>
         <commons-pool2.version>2.12.0</commons-pool2.version>
         <jrebloom.version>2.1.0</jrebloom.version>
+        <canal.version>1.1.0</canal.version>
+        <fastjson.version>1.2.73</fastjson.version>
     </properties>
 
     <dependencyManagement>
@@ -190,6 +193,17 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-pool2</artifactId>
                 <version>${commons-pool2.version}</version>
+            </dependency>
+            <!-- https://mvnrepository.com/artifact/com.alibaba.otter/canal.client -->
+            <dependency>
+                <groupId>com.alibaba.otter</groupId>
+                <artifactId>canal.client</artifactId>
+                <version>${canal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
