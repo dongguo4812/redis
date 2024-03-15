@@ -1,6 +1,6 @@
 package com.dongguo.redis.canal;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry;
@@ -8,10 +8,10 @@ import com.alibaba.otter.canal.protocol.CanalEntry.*;
 import com.alibaba.otter.canal.protocol.Message;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -19,42 +19,38 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisCanalClientExample {
     @Resource
-    private RedisTemplate redisTemplate;
-    public static final Integer _60SECONDS = 60;
+    private StringRedisTemplate stringRedisTemplate;
     public static final String CANAL_IP_ADDR = "192.168.122.131";
-
+    public static final String CACHE_USER_KEY = "redis:user:";
     private void redisInsert(List<Column> columns) {
-        JSONObject jsonObject = new JSONObject();
+        HashMap map = new HashMap();
         for (CanalEntry.Column column : columns) {
             System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());
-            jsonObject.put(column.getName(), column.getValue());
+            map.put(column.getName(), column.getValue());
+
         }
         if (columns.size() > 0) {
-            redisTemplate.opsForValue().set(columns.get(0).getValue(), jsonObject.toJSONString());
+            stringRedisTemplate.opsForValue().set(CACHE_USER_KEY + columns.get(0).getValue(), JSON.toJSONString(map));
         }
     }
 
     private void redisDelete(List<CanalEntry.Column> columns) {
-        JSONObject jsonObject = new JSONObject();
-        for (CanalEntry.Column column : columns) {
-            jsonObject.put(column.getName(), column.getValue());
-        }
         if (columns.size() > 0) {
-            redisTemplate.delete(columns.get(0).getValue());
+            stringRedisTemplate.delete(CACHE_USER_KEY + columns.get(0).getValue());
 
         }
     }
 
     private void redisUpdate(List<CanalEntry.Column> columns) {
-        JSONObject jsonObject = new JSONObject();
+        HashMap map = new HashMap();
         for (CanalEntry.Column column : columns) {
             System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());
-            jsonObject.put(column.getName(), column.getValue());
+            map.put(column.getName(), column.getValue());
         }
         if (columns.size() > 0) {
-            redisTemplate.opsForValue().set(columns.get(0).getValue(), jsonObject.toJSONString());
+            stringRedisTemplate.opsForValue().set(CACHE_USER_KEY + columns.get(0).getValue(), JSON.toJSONString(map));
 
-            System.out.println("---------update after: " + jsonObject.toJSONString());
+            System.out.println("---------update after: " + JSON.toJSONString(map));
 
         }
     }
@@ -65,7 +61,7 @@ public class RedisCanalClientExample {
                 continue;
             }
 
-            CanalEntry.RowChange rowChage = null;
+            CanalEntry.RowChange rowChage;
             try {
                 //获取变更的row数据
                 rowChage = CanalEntry.RowChange.parseFrom(entry.getStoreValue());
@@ -107,9 +103,9 @@ public class RedisCanalClientExample {
             connector.connect();
             connector.subscribe("redis.t_user");
             connector.rollback();
-            int totalEmptyCount = 10 * _60SECONDS;
+            int totalEmptyCount = 10 * 60;
             while (emptyCount < totalEmptyCount) {
-                System.out.println("我是canal，每秒一次正在监听：" + UUID.randomUUID().toString());
+                System.out.println("我是canal，每秒一次正在监听：" + UUID.randomUUID());
                 //获取指定数量的数据
                 Message mes = connector.getWithoutAck(batchSize);
                 long batchId = mes.getId();
