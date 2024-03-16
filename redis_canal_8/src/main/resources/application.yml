@@ -24,4 +24,4 @@ canal:
 # 设置canal消息日志打印级别
 logging:
   level:
-    top.javatool.canal.client: warn
+    org.xiaowu.behappy.canal: debug

@@ -88,7 +88,7 @@ public class RedisCanalClientExample {
         }
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         System.out.println("--------------init()--------------");
 
