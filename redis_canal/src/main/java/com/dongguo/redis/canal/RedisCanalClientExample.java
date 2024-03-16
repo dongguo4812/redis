@@ -16,12 +16,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Component
+import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_USER_KEY;
+
+//@Component
 public class RedisCanalClientExample {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
     public static final String CANAL_IP_ADDR = "192.168.122.131";
-    public static final String CACHE_USER_KEY = "redis:user:";
+
     private void redisInsert(List<Column> columns) {
         HashMap map = new HashMap();
         for (CanalEntry.Column column : columns) {
@@ -66,7 +68,7 @@ public class RedisCanalClientExample {
                 //获取变更的row数据
                 rowChage = CanalEntry.RowChange.parseFrom(entry.getStoreValue());
             } catch (Exception e) {
-                throw new RuntimeException("ERROR ## parser of eromanga-event has an error,data:" + entry.toString(), e);
+                throw new RuntimeException("ERROR ## parser of eromanga-event has an error,data:" + entry, e);
             }
             //获取变动类型
             CanalEntry.EventType eventType = rowChage.getEventType();
@@ -86,7 +88,7 @@ public class RedisCanalClientExample {
         }
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         System.out.println("--------------init()--------------");
 
