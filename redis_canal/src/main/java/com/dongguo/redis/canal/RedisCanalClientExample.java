@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.dongguo.redis.utils.CacheKeyUtil.CACHE_USER_KEY;
 
-//@Component
+@Component
 public class RedisCanalClientExample {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -88,7 +88,7 @@ public class RedisCanalClientExample {
         }
     }
 
-//    @PostConstruct
+    @PostConstruct
     public void init() {
         System.out.println("--------------init()--------------");
 

@@ -18,10 +18,3 @@ spring:
       host: 192.168.122.131
       port: 6379
       password: root
-canal:
-  destination: example # canal的集群名字，要与安装canal时设置的名称一致
-  server: 192.168.122.131:11111 # canal服务地址
-# 设置canal消息日志打印级别
-logging:
-  level:
-    top.javatool.canal.client: warn
