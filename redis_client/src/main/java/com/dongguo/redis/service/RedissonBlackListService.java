@@ -7,6 +7,7 @@ import org.redisson.api.RBloomFilter;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,6 +16,7 @@ public class RedissonBlackListService {
     @Resource
     private RBloomFilter<String> rBloomFilter;
     @Resource
+    @Qualifier("redissonClientFactory")
     private  RedissonClient redissonClient;
     public String videoRecommendation(String videoId) {
         boolean contains = rBloomFilter.contains(videoId);

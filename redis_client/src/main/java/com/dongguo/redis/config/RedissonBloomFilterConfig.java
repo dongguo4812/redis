@@ -7,6 +7,7 @@ import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,18 +19,16 @@ public class RedissonBloomFilterConfig {
     private static final int COUNT = 10000 * 100;
     //误判率  大于0小于1.0
     private static final double FPP = 0.03;
-    RedissonClient redissonClient = null;
 
-    @Bean
+    @Bean(name = "redissonClientFactory")
     public RedissonClient redissonClientFactory() {
         Config configs = new Config();
         String address = "redis://" + redisProperties.getHost() + ":" + redisProperties.getPort();
         configs.useSingleServer().setAddress(address).setPassword(redisProperties.getPassword()).setDatabase(0);
-        redissonClient = Redisson.create(configs);
-        return redissonClient;
+        return Redisson.create(configs);
     }
     @Bean
-    public RBloomFilter<String> RBloomFilterFactory(RedissonClient redissonClient) {
+    public RBloomFilter<String> RBloomFilterFactory(@Qualifier("redissonClientFactory")RedissonClient redissonClient) {
         //初始化布隆过滤器
         RBloomFilter<String> bloomFilter = redissonClient.getBloomFilter("blackList", new StringCodec());
         bloomFilter.tryInit(COUNT, FPP);
