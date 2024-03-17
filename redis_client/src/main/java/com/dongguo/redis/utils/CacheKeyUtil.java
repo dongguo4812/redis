@@ -19,6 +19,8 @@ public class CacheKeyUtil {
     public  static final String CACHE_JHS_KEY="redis:jhs";
     public  static final String CACHE_JHS_A_KEY="redis:jhs:a";
     public  static final String CACHE_JHS_B_KEY="redis:jhs:b";
+    public  static final String CACHE_RED_PACKAGE_KEY="redis:redPackage:";
+    public  static final String CACHE_RED_PACKAGE_CONSUME_KEY="redis:redPackage:user:";
 
     public  static final String CACHE_SHORT_URL_KEY="redis:short:url";
 }
