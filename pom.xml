@@ -9,7 +9,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>redis_client</module>
-        <module>springboot_redis</module>
         <module>redis_distributed_lock</module>
         <module>redis_core</module>
         <module>redis_canal</module>
