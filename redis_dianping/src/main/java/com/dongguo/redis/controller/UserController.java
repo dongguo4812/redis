@@ -1,9 +1,7 @@
 package com.dongguo.redis.controller;
 
 import com.dongguo.redis.service.IUserService;
-import com.dongguo.redis.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;

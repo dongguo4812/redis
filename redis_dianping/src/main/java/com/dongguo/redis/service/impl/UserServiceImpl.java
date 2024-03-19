@@ -1,11 +1,7 @@
 package com.dongguo.redis.service.impl;
 
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dongguo.redis.entity.POJO.User;
 import com.dongguo.redis.mapper.UserMapper;
@@ -14,10 +10,8 @@ import com.dongguo.redis.utils.RegexUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
@@ -40,7 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public String sendCode(String phone, HttpSession session) {
         //1校验手机号是否符合规定
-        if (StringUtils.isEmpty(phone)) {
+        if (StringUtils.isBlank(phone)) {
             return "手机号不能为空";
         } else if (phone.length() != 11) {
             return "手机号" + phone + "不符合要求";
@@ -52,11 +46,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //2生成验证码
         String code = RandomUtil.randomNumbers(6);
         //3保存到session中
-//        session.setAttribute("code", code);
+        session.setAttribute("code", code);
         //保存到redis中
-        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY +phone,
-                code,
-                Duration.ofMinutes(LOGIN_CODE_TTL));
+//        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY +phone,
+//                code,
+//                Duration.ofMinutes(LOGIN_CODE_TTL));
         //4发送验证码
         log.debug("验证码发送成功:{}", code);
         return "验证码发送成功:" + code;
