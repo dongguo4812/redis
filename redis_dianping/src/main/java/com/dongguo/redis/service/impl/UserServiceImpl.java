@@ -100,13 +100,13 @@ import java.util.Map;
         String token = UUID.randomUUID().toString(true);
         UserDTO userDTO = new UserDTO();
         BeanUtil.copyProperties(user, userDTO);
-        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, false, false);
+//        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, false, false);
 //        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
 //        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
         session.setAttribute("user",userDTO);
         return Result.ok(token);
     }
-//
+
 //    @Override
 //    public Result logout(HttpServletRequest request) {
 //        String token = request.getHeader("authorization");
