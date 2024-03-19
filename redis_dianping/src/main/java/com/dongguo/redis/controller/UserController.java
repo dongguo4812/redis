@@ -1,12 +1,13 @@
 package com.dongguo.redis.controller;
 
+import com.dongguo.redis.service.IUserService;
+import com.dongguo.redis.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @Author: Administrator
@@ -19,13 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
         description = "用户控制器接口")
 public class UserController {
 
-
+    @Resource
+    private IUserService userService;
     @Operation(
-            summary = "根据Id查询用户信息",
-            description = "根据ID查询用户信息，并返回响应结果信息"
+            summary = "sendCode",
+            description = "发送手机验证码"
     )
-    @GetMapping("/hello")
-    public void hello() {
-        System.out.println("hello");
+    @GetMapping("/sendCode")
+    public String sendCode(@RequestParam(value = "phone") String phone, HttpSession session) {
+        return userService.sendCode(phone, session);
     }
 }
