@@ -9,3 +9,11 @@
 
 参考视频：[尚硅谷Redis7教程](https://www.bilibili.com/video/BV13R4y1v7sP/)  
 参考书籍：《Redis 6开发与实战》
+
+
+redis_canal： mysql + canal + redis 实现数据双写一致性，jdk版本17
+redis_canal： mysql + canal + redis 实现数据双写一致性，jdk版本8
+redis_distributed_lock： reids分布式锁
+redis_client: redis-java客户端与数据类型实战
+redis_core： 通用配置
+reids_dianping: redis项目实战
