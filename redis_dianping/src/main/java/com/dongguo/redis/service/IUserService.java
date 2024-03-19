@@ -1,7 +1,9 @@
 package com.dongguo.redis.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.dongguo.redis.entity.BO.LoginFormBO;
 import com.dongguo.redis.entity.POJO.User;
+import com.dongguo.redis.entity.Result;
 import jakarta.servlet.http.HttpSession;
 
 
@@ -12,9 +14,10 @@ import jakarta.servlet.http.HttpSession;
  */
 public interface IUserService extends IService<User> {
 
-    String sendCode(String phone, HttpSession session);
+    Result sendCode(String phone, HttpSession session);
 
-//    Result login(LoginFormBO loginForm, HttpSession session);
+    Result login(LoginFormBO loginForm, HttpSession session);
+
 //
 //    Result logout(HttpServletRequest request);
 //

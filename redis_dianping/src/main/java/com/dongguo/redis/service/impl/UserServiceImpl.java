@@ -1,12 +1,22 @@
 package com.dongguo.redis.service.impl;
 
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dongguo.redis.entity.BO.LoginFormBO;
+import com.dongguo.redis.entity.DTO.UserDTO;
 import com.dongguo.redis.entity.POJO.User;
+import com.dongguo.redis.entity.Result;
 import com.dongguo.redis.mapper.UserMapper;
 import com.dongguo.redis.service.IUserService;
+import com.dongguo.redis.utils.RedisConstants;
 import com.dongguo.redis.utils.RegexUtils;
+import com.dongguo.redis.utils.SystemConstants;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +24,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
@@ -29,16 +43,17 @@ import org.springframework.stereotype.Service;
         private StringRedisTemplate stringRedisTemplate;
 
         @Override
-        public String sendCode(String phone, HttpSession session) {
+        public Result sendCode(String phone, HttpSession session) {
             //1校验手机号是否符合规定
             if (StringUtils.isBlank(phone)) {
-                return "手机号不能为空";
-            } else if (phone.length() != 11) {
-                return "手机号" + phone + "不符合要求";
+                return Result.fail("手机号不能为空");
+            }
+            if (phone.length() != 11) {
+                return Result.fail("手机号" + phone + "不符合要求");
             }
             boolean isMatch = RegexUtils.isPhoneInvalid(phone);
             if (isMatch) {
-                return "手机号" + phone + "不符合要求";
+                return Result.fail("手机号" + phone + "不符合要求");
             }
             //2生成验证码
             String code = RandomUtil.randomNumbers(6);
@@ -50,47 +65,47 @@ import org.springframework.stereotype.Service;
 //                Duration.ofMinutes(LOGIN_CODE_TTL));
             //4发送验证码
             log.debug("验证码发送成功:{}", code);
-            return "验证码发送成功:" + code;
+            return Result.ok("验证码发送成功:" + code);
         }
 
-//    @Override
-//    public Result login(LoginFormDTO loginForm, HttpSession session) {
-//
-//        if (org.springframework.util.ObjectUtils.isEmpty(loginForm)) {
-//            return Result.fail("数据为空");
-//        }
-//        if (StringUtils.isEmpty(loginForm.getPhone()) || StringUtils.isEmpty(loginForm.getCode())) {
-//            return Result.fail("手机号或者验证码不能为空");
-//        }
-//        boolean isMatch = RegexUtils.isPhoneInvalid(loginForm.getPhone());
-//        if (isMatch) {
-//            return Result.fail("手机号" + loginForm.getPhone() + "不符合要求");
-//        }
+    @Override
+    public Result login(LoginFormBO loginForm, HttpSession session) {
+        if (ObjectUtil.isEmpty(loginForm)) {
+            return Result.fail("数据为空");
+        }
+        if (StringUtils.isBlank(loginForm.getPhone()) || StringUtils.isBlank(loginForm.getCode())) {
+            return Result.fail("手机号或者验证码不能为空");
+        }
+        boolean isMatch = RegexUtils.isPhoneInvalid(loginForm.getPhone());
+        if (isMatch) {
+            return Result.fail("手机号" + loginForm.getPhone() + "不符合要求");
+        }
 //        String code = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
-////        String code = session.getAttribute("code").toString();
-//        if (!loginForm.getCode().equals(code)) {
-//            return Result.fail("验证码错误");
-//        }
-//
-//        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
-//        wrapper.eq(User::getPhone, loginForm.getPhone());
-//        User user = userMapper.selectOne(wrapper);
-//        if (ObjectUtils.isEmpty(user)) {
-//            //注册
-//            User newUser = new User()
-//                    .setPhone(loginForm.getPhone())
-//                    .setNickName(SystemConstants.USER_NICK_NAME_PREFIX + RandomUtil.randomString(SystemConstants.MAX_PAGE_SIZE));
-//            userMapper.insert(newUser);
-//        }
-//        //登录
-//        String token = UUID.randomUUID().toString(true);
-//        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
-//        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(), CopyOptions.create().setIgnoreNullValue(true).setFieldValueEditor((fieldName,filedValue) ->filedValue.toString()));
+        String code = session.getAttribute("code").toString();
+        if (!loginForm.getCode().equals(code)) {
+            return Result.fail("验证码错误");
+        }
+
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getPhone, loginForm.getPhone());
+        User user = userMapper.selectOne(wrapper);
+        if (ObjectUtil.isEmpty(user)) {
+            //注册
+            User newUser = new User()
+                    .setPhone(loginForm.getPhone())
+                    .setNickName(SystemConstants.USER_NICK_NAME_PREFIX + RandomUtil.randomString(SystemConstants.MAX_PAGE_SIZE));
+            userMapper.insert(newUser);
+        }
+        //登录
+        String token = UUID.randomUUID().toString(true);
+        UserDTO userDTO = new UserDTO();
+        BeanUtil.copyProperties(user, userDTO);
+        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, false, false);
 //        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
 //        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
-////        session.setAttribute("user", BeanUtil.copyProperties(user, UserDTO.class));
-//        return Result.ok(token);
-//    }
+        session.setAttribute("user",userDTO);
+        return Result.ok(token);
+    }
 //
 //    @Override
 //    public Result logout(HttpServletRequest request) {
