@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.dongguo.redis.mapper.UserMapper">
-  <resultMap id="BaseResultMap" type="com.dongguo.redis.entity.User">
+  <resultMap id="BaseResultMap" type="com.dongguo.redis.entity.POJO.User">
     <!--
       WARNING - @mbg.generated
     -->

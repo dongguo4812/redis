@@ -20,9 +20,14 @@ spring:
           min-idle: 1
           time-between-eviction-runs: 10s
   jackson:
-    default-property-inclusion: non_null # JSON\u5904\u7406\u65F6\u5FFD\u7565\u975E\u7A7A\u5B57\u6BB5
+    default-property-inclusion: non_null # JSON处理时忽略非空字段
 mybatis-plus:
-  type-aliases-package: com.dongguo.redis.entity # \u522B\u540D\u626B\u63CF\u5305
+  type-aliases-package: com.dongguo.redis.entity # 别名扫描包
 logging:
   level:
     com.dongguo.redis: debug
+# ========================swagger=====================
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

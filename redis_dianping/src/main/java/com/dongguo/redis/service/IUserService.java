@@ -1,9 +1,7 @@
 package com.dongguo.redis.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.dongguo.redis.entity.BO.LoginFormBO;
 import com.dongguo.redis.entity.POJO.User;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 

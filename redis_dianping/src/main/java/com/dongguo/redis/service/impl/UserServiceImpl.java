@@ -14,9 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import java.time.Duration;
-import static com.dongguo.redis.utils.RedisConstants.LOGIN_CODE_KEY;
-import static com.dongguo.redis.utils.RedisConstants.LOGIN_CODE_TTL;
 
 /**
  * <p>
@@ -24,37 +21,37 @@ import static com.dongguo.redis.utils.RedisConstants.LOGIN_CODE_TTL;
  * </p>
  */
 @Service
-@Slf4j
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
-    @Autowired
-    private UserMapper userMapper;
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    @Slf4j
+    public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+        @Autowired
+        private UserMapper userMapper;
+        @Resource
+        private StringRedisTemplate stringRedisTemplate;
 
-    @Override
-    public String sendCode(String phone, HttpSession session) {
-        //1校验手机号是否符合规定
-        if (StringUtils.isBlank(phone)) {
-            return "手机号不能为空";
-        } else if (phone.length() != 11) {
-            return "手机号" + phone + "不符合要求";
-        }
-        boolean isMatch = RegexUtils.isPhoneInvalid(phone);
-        if (isMatch) {
-            return "手机号" + phone + "不符合要求";
-        }
-        //2生成验证码
-        String code = RandomUtil.randomNumbers(6);
-        //3保存到session中
-        session.setAttribute("code", code);
-        //保存到redis中
+        @Override
+        public String sendCode(String phone, HttpSession session) {
+            //1校验手机号是否符合规定
+            if (StringUtils.isBlank(phone)) {
+                return "手机号不能为空";
+            } else if (phone.length() != 11) {
+                return "手机号" + phone + "不符合要求";
+            }
+            boolean isMatch = RegexUtils.isPhoneInvalid(phone);
+            if (isMatch) {
+                return "手机号" + phone + "不符合要求";
+            }
+            //2生成验证码
+            String code = RandomUtil.randomNumbers(6);
+            //3保存到session中
+            session.setAttribute("code", code);
+            //保存到redis中
 //        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY +phone,
 //                code,
 //                Duration.ofMinutes(LOGIN_CODE_TTL));
-        //4发送验证码
-        log.debug("验证码发送成功:{}", code);
-        return "验证码发送成功:" + code;
-    }
+            //4发送验证码
+            log.debug("验证码发送成功:{}", code);
+            return "验证码发送成功:" + code;
+        }
 
 //    @Override
 //    public Result login(LoginFormDTO loginForm, HttpSession session) {
