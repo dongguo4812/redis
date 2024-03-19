@@ -11,3 +11,16 @@
 参考书籍：《Redis 6开发与实战》
 
 
+
+redis_canal： mysql + canal + redis 实现数据双写一致性，jdk版本17
+
+redis_canal： mysql + canal + redis 实现数据双写一致性，jdk版本8
+
+redis_distributed_lock： reids分布式锁
+
+redis_client: redis-java客户端整合与数据类型实战
+
+redis_core： 通用配置
+
+reids_dianping: redis点评项目实战
+
