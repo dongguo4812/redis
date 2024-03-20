@@ -1,9 +1,13 @@
 package com.dongguo.redis.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dongguo.redis.entity.POJO.Shop;
+import com.dongguo.redis.entity.RedisData;
 import com.dongguo.redis.entity.Result;
 import com.dongguo.redis.mapper.ShopMapper;
 import com.dongguo.redis.service.IShopService;
@@ -14,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.dongguo.redis.utils.RedisConstants.*;
@@ -29,6 +35,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private RedisTemplate redisTemplate;
     @Autowired
     private ShopMapper shopMapper;
+    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
     @Override
     public Result queryShopById(Long id) {
@@ -38,44 +45,61 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         String shopCacheKey = CACHE_SHOP_KEY + id;
         //先查缓存
         Object object = redisTemplate.opsForValue().get(shopCacheKey);
-        //判空
-        if (ObjectUtil.isNotEmpty(object)) {
-            //缓存查到 返回
-            return Result.ok(object);
-        }
         //缓存的空值   缓存的空字符串""
         if (ObjectUtil.equal(object, "")) {
             return Result.fail("店铺信息不存在");
         }
+        //热点key续期，缓存中没有直接返回
+        if (object == null){
+            Shop shop = getAndCacheShop(id);
+            return Result.ok(shop);
+        }
+        RedisData redisData = (RedisData) object;
+        Shop shop = (Shop) redisData.getData();
+        Date expireTime = redisData.getExpireTime();
+        //判断是否过期
+        if (expireTime.after(new Date())) {
+            //没过期
+            return Result.ok(shop);
+        }
         //尝试加锁
         String lockKey = LOCK_SHOP_KEY + id;
         Boolean ifAbsent = redisTemplate.opsForValue().setIfAbsent(lockKey, id, LOCK_SHOP_TTL, TimeUnit.MINUTES);
-        if (!ifAbsent) {
-            //未获得锁，轮询
-            try {
-                TimeUnit.MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return queryShopById(id);
+        if (ifAbsent) {
+            //开启独立线程 重建缓存
+            CACHE_REBUILD_EXECUTOR.submit(() -> {
+                try {
+                    getAndCacheShop(id);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    redisTemplate.delete(lockKey);
+                }
+            });
         }
-        //缓存中没查到  查数据库
-        Shop shop = shopMapper.selectById(id);
-        if (ObjectUtil.isEmpty(shop)) {
-            //解决缓存穿透问题  缓存空对象
-            redisTemplate.opsForValue().set(shopCacheKey, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
-            return Result.fail("店铺信息不存在");
-        }
-        //存到缓存中
-        redisTemplate.opsForValue().set(shopCacheKey, shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        //删除锁
-        redisTemplate.delete(lockKey);
         return Result.ok(shop);
+    }
+
+    private Shop getAndCacheShop(Long id) {
+        //查询店铺数据
+        Shop shop = shopMapper.selectById(id);
+        if (ObjectUtil.isNotEmpty(shop)) {
+            RedisData dataShop = new RedisData();
+            dataShop.setData(shop);
+            dataShop.setExpireTime(DateUtil.offsetMinute(new Date(), 10));
+            redisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, dataShop);
+
+        } else {
+            //解决缓存穿透问题  缓存空对象
+            redisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+        }
+        return shop;
     }
 
     /**
      * V3
      * 互斥锁解决缓存雪崩
+     *
      * @param id
      * @return
      */
