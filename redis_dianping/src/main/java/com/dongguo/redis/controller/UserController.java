@@ -39,6 +39,10 @@ public class UserController {
      * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
      */
     @PostMapping("/login")
+    @Operation(
+            summary = "login",
+            description = "登录功能"
+    )
     public Result login(@RequestBody LoginFormBO loginForm, HttpSession session) {
         return userService.login(loginForm,session);
     }
@@ -49,6 +53,10 @@ public class UserController {
      * @return
      */
     @GetMapping("/me")
+    @Operation(
+            summary = "me",
+            description = "获取user信息"
+    )
     public Result me() {
         UserDTO user = UserThreadLocalCache.getUser();
         return Result.ok(user);

@@ -11,6 +11,7 @@ import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -20,9 +21,6 @@ import static com.dongguo.redis.utils.RedisConstants.*;
  * <p>
  * 服务实现类
  * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
  */
 @Service
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IShopService {
@@ -175,6 +173,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 //    }
 //
 //
+
     /**
      * 查询缓存   空值解决缓存穿透
      *
@@ -205,23 +204,21 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 //        stringRedisTemplate.opsForValue().set(shopCacheKey, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
 //        return shop;
 //    }
+    @Override
+    @Transactional
+    public Result updateShop(Shop shop) {
+        Shop shopById = getById(shop.getId());
+        if (ObjectUtil.isEmpty(shopById)) {
+            return Result.fail("商铺不存在");
+        }
+        // 写入数据库
+        updateById(shop);
 
-//
-//    @Override
-//    @Transactional
-//    public Result updateShop(Shop shop) {
-//        Shop shopById = getById(shop.getId());
-//        if (ObjectUtils.isEmpty(shopById)) {
-//            return Result.fail("商铺不存在");
-//        }
-//        // 写入数据库
-//        updateById(shop);
-//
-//        //删除缓存
-//        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + shop.getId());
-//        return Result.ok();
-//    }
-//
+        //删除缓存
+        redisTemplate.delete(CACHE_SHOP_KEY + shop.getId());
+        return Result.ok();
+    }
+
 //    @Override
 //    public Result queryShopByType(Integer typeId, Integer current, Double x, Double y) {
 //        // 1.判断是否需要根据坐标查询

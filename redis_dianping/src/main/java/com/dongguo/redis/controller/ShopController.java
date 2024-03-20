@@ -1,5 +1,6 @@
 package com.dongguo.redis.controller;
 
+import com.dongguo.redis.entity.POJO.Shop;
 import com.dongguo.redis.entity.Result;
 import com.dongguo.redis.service.IShopService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,16 +52,20 @@ public class ShopController {
 //        return Result.ok(shop.getId());
 //    }
 //
-//    /**
-//     * 更新商铺信息
-//     *
-//     * @param shop 商铺数据
-//     * @return 无
-//     */
-//    @PutMapping
-//    public Result updateShop(@RequestBody Shop shop) {
-//        return shopService.updateShop(shop);
-//    }
+    /**
+     * 更新商铺信息
+     *
+     * @param shop 商铺数据
+     * @return 无
+     */
+    @PutMapping
+    @Operation(
+            summary = "updateShop",
+            description = "更新商铺信息"
+    )
+    public Result updateShop(@RequestBody Shop shop) {
+        return shopService.updateShop(shop);
+    }
 //
 //    /**
 //     * 根据商铺类型分页查询商铺信息
