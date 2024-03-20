@@ -6,7 +6,7 @@ import com.dongguo.redis.entity.DTO.UserDTO;
 import com.dongguo.redis.support.threadlocal.UserThreadLocalCache;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -16,10 +16,10 @@ import static com.dongguo.redis.utils.RedisConstants.LOGIN_USER_TTL;
 
 public class RefreshTokenInterceptor implements HandlerInterceptor {
 
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate redisTemplate;
 
-    public RefreshTokenInterceptor(StringRedisTemplate stringRedisTemplate) {
-        this.stringRedisTemplate = stringRedisTemplate;
+    public RefreshTokenInterceptor(RedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
     /**
      * 在控制器方法（即处理请求的@RequestMapping注解的方法）之前调用
@@ -48,7 +48,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         }
         // 2.基于TOKEN获取redis中的用户
         String tokenKey  = LOGIN_USER_KEY + token;
-        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(tokenKey);
+        Map<Object, Object> userMap = redisTemplate.opsForHash().entries(tokenKey);
         // 3.判断用户是否存在
         if (userMap.isEmpty()) {
             return true;
@@ -58,7 +58,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         // 6.存在，保存用户信息到 ThreadLocal
         UserThreadLocalCache.setUser(userDTO);
         // 7.刷新token有效期
-        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        redisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
         // 8.放行
         return true;
     }

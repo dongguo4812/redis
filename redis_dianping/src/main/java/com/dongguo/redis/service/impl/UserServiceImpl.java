@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.HashMap;
@@ -42,7 +42,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Autowired
     private UserMapper userMapper;
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate redisTemplate;
 
     @Override
     public Result sendCode(String phone, HttpSession session) {
@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //3保存到session中
 //            session.setAttribute("code", code);
         //保存到redis中
-        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone,
+        redisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone,
                 code,
                 Duration.ofMinutes(LOGIN_CODE_TTL));
         //4发送验证码
@@ -82,12 +82,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (isMatch) {
             return Result.fail("手机号" + loginForm.getPhone() + "不符合要求");
         }
-        String code = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
-//        String code = session.getAttribute("code").toString();
-        if (!loginForm.getCode().equals(code)) {
+        Object obj = redisTemplate.opsForValue().get(LOGIN_CODE_KEY + loginForm.getPhone());
+        if (obj == null){
             return Result.fail("验证码错误");
         }
-
+//        String code = session.getAttribute("code").toString();
         LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(User::getPhone, loginForm.getPhone());
         User user = userMapper.selectOne(wrapper);
@@ -99,13 +98,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             userMapper.insert(newUser);
         }
         //登录
-        String token = UUID.randomUUID().toString(true);
+//        String token = UUID.randomUUID().toString(true);
+        String token = "a41a9267cede4b879bd46857661a01fd";//开发阶段固定token
         UserDTO userDTO = new UserDTO();
         BeanUtil.copyProperties(user, userDTO);
         Map<String, Object> userMap = new HashMap<>();
         BeanUtil.copyProperties(userDTO, userMap, new CopyOptions().setConverter((fieldName,filedValue) ->filedValue.toString()));
-        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
-        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
+        redisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
+        redisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
 //        session.setAttribute("user", userDTO);
         return Result.ok(token);
     }
