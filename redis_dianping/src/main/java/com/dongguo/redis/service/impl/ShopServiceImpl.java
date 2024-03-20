@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -36,46 +37,154 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         String shopCacheKey = CACHE_SHOP_KEY + id;
         //先查缓存
-        Map<Object, Object> map = redisTemplate.opsForHash().entries(shopCacheKey);
+        Object object = redisTemplate.opsForValue().get(shopCacheKey);
         //判空
-        if (!map.isEmpty()) {
+        if (ObjectUtil.isNotEmpty(object)) {
             //缓存查到 返回
-            return Result.ok(BeanUtil.toBean(map, Shop.class));
+            return Result.ok(object);
+        }
+        //缓存的空值   缓存的空字符串""
+        if (ObjectUtil.equal(object, "")) {
+            return Result.fail("店铺信息不存在");
+        }
+        //尝试加锁
+        String lockKey = LOCK_SHOP_KEY + id;
+        Boolean ifAbsent = redisTemplate.opsForValue().setIfAbsent(lockKey, id, LOCK_SHOP_TTL, TimeUnit.MINUTES);
+        if (!ifAbsent) {
+            //未获得锁，轮询
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return queryShopById(id);
+        }
+        //缓存中没查到  查数据库
+        Shop shop = shopMapper.selectById(id);
+        if (ObjectUtil.isEmpty(shop)) {
+            //解决缓存穿透问题  缓存空对象
+            redisTemplate.opsForValue().set(shopCacheKey, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+            return Result.fail("店铺信息不存在");
+        }
+        //存到缓存中
+        redisTemplate.opsForValue().set(shopCacheKey, shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        //删除锁
+        redisTemplate.delete(lockKey);
+        return Result.ok(shop);
+    }
+
+    /**
+     * V3
+     * 互斥锁解决缓存雪崩
+     * @param id
+     * @return
+     */
+    private Result cacheShopWithMutex(Long id) {
+        if (id == null) {
+            return Result.fail("店铺id不能为空");
+        }
+        String shopCacheKey = CACHE_SHOP_KEY + id;
+        //先查缓存
+        Object object = redisTemplate.opsForValue().get(shopCacheKey);
+        //判空
+        if (ObjectUtil.isNotEmpty(object)) {
+            //缓存查到 返回
+            return Result.ok(object);
+        }
+        //缓存的空值   缓存的空字符串""
+        if (ObjectUtil.equal(object, "")) {
+            return Result.fail("店铺信息不存在");
+        }
+        //尝试加锁
+        String lockKey = LOCK_SHOP_KEY + id;
+        Boolean ifAbsent = redisTemplate.opsForValue().setIfAbsent(lockKey, id, LOCK_SHOP_TTL, TimeUnit.MINUTES);
+        if (!ifAbsent) {
+            //未获得锁，轮询
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return queryShopById(id);
+        }
+        //缓存中没查到  查数据库
+        Shop shop = shopMapper.selectById(id);
+        if (ObjectUtil.isEmpty(shop)) {
+            //解决缓存穿透问题  缓存空对象
+            redisTemplate.opsForValue().set(shopCacheKey, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+            return Result.fail("店铺信息不存在");
+        }
+        //存到缓存中
+        redisTemplate.opsForValue().set(shopCacheKey, shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        //删除锁
+        redisTemplate.delete(lockKey);
+        return Result.ok(shop);
+    }
+
+    /**
+     * V2查询缓存   空值解决缓存穿透
+     *
+     * @param id
+     * @return
+     */
+    private Result cacheShopWithNullValue(Long id) {
+        if (id == null) {
+            return Result.fail("店铺id不能为空");
+        }
+        String shopCacheKey = CACHE_SHOP_KEY + id;
+        //先查缓存
+        Object object = redisTemplate.opsForValue().get(shopCacheKey);
+        //判空
+        if (ObjectUtil.isNotEmpty(object)) {
+            //缓存查到 返回
+            return Result.ok(object);
+        }
+        //缓存的空值   缓存的空字符串""
+        if (ObjectUtil.equal(object, "")) {
+            return Result.fail("店铺信息不存在");
+        }
+        //缓存中没查到  查数据库
+        Shop shop = shopMapper.selectById(id);
+        if (ObjectUtil.isEmpty(shop)) {
+            //解决缓存穿透问题  缓存空对象
+            redisTemplate.opsForValue().set(shopCacheKey, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+            return Result.fail("店铺信息不存在");
+        }
+        //存到缓存中
+        redisTemplate.opsForValue().set(shopCacheKey, shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        return Result.ok(shop);
+    }
+
+    /**
+     * V1
+     *
+     * @param id
+     * @return
+     */
+    private Result queryShop(Long id) {
+        if (id == null) {
+            return Result.fail("店铺id不能为空");
+        }
+        String shopCacheKey = CACHE_SHOP_KEY + id;
+        //先查缓存
+        Object object = redisTemplate.opsForValue().get(shopCacheKey);
+        //判空
+        if (ObjectUtil.isNotEmpty(object)) {
+            //缓存查到 返回
+            return Result.ok(object);
         }
         //缓存中没查到  查数据库
         Shop shop = shopMapper.selectById(id);
         if (ObjectUtil.isEmpty(shop)) {
             return Result.fail("店铺信息不存在");
         }
-        //查数据库 存到缓存中
-        Map<Object, Object> shopMap = new HashMap<>();
-        BeanUtil.copyProperties(shop, shopMap);
-        redisTemplate.opsForHash().putAll(shopCacheKey, shopMap);
-        redisTemplate.expire(shopCacheKey, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        //存到缓存中
+        redisTemplate.opsForValue().set(shopCacheKey, shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
         return Result.ok(shop);
     }
 
-//    public Shop saveShop2Redis(Long id, Long expireSeconds) {
-//        //查询店铺数据
-//        Shop shop = shopMapper.selectById(id);
-//        if (ObjectUtil.isNotEmpty(shop)) {
-//            RedisData redisData = new RedisData();
-//            redisData.setData(shop);
-//            redisData.setExpireTime(LocalDateTime.now().plusSeconds(expireSeconds));
-//            try {
-//               Thread.sleep(10);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//            stringRedisTemplate.opsForValue().set(RedisConstants.CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(redisData));
-//
-//        }
-//        return shop;
-//    }
-//
-//    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
-//    /**
+    //    /**
 //     * 逻辑过期解决缓存击穿问题
 //     *
 //     * @param id
@@ -112,7 +221,29 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 //        }
 //        return shop;
 //    }
+
+//    public Shop saveShop2Redis(Long id, Long expireSeconds) {
+//        //查询店铺数据
+//        Shop shop = shopMapper.selectById(id);
+//        if (ObjectUtil.isNotEmpty(shop)) {
+//            RedisData redisData = new RedisData();
+//            redisData.setData(shop);
+//            redisData.setExpireTime(LocalDateTime.now().plusSeconds(expireSeconds));
+//            try {
+//               Thread.sleep(10);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            stringRedisTemplate.opsForValue().set(RedisConstants.CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(redisData));
 //
+//        }
+//        return shop;
+//    }
+//
+//    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+
+
+    //
 //    /**
 //     * 互斥锁解决缓存雪崩
 //     *
@@ -173,37 +304,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 //    }
 //
 //
-
-    /**
-     * 查询缓存   空值解决缓存穿透
-     *
-     * @param id
-     * @return
-     */
-//    public Shop cacheShopWithPassThough(Long id) {
-//        String shopCacheKey = CACHE_SHOP_KEY + id;
-//        //先查缓存
-//        String jsonShop = stringRedisTemplate.opsForValue().get(shopCacheKey);
-//        //判空
-//        if (StrUtil.isNotBlank(jsonShop)) {
-//            //缓存查到 返回
-//            return JSONUtil.toBean(jsonShop, Shop.class);
-//        }
-//        //缓存的空值   不是null 那就是我们缓存的空字符串""
-//        if (jsonShop != null) {
-//            return null;
-//        }
-//        //缓存中没查到  查数据库
-//        Shop shop = shopMapper.selectById(id);
-//        if (ObjectUtils.isEmpty(shop)) {
-//            //解决缓存穿透问题  缓存空对象
-//            stringRedisTemplate.opsForValue().set(shopCacheKey, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
-//            return null;
-//        }
-//        //查数据库 存到缓存中
-//        stringRedisTemplate.opsForValue().set(shopCacheKey, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
-//        return shop;
-//    }
     @Override
     @Transactional
     public Result updateShop(Shop shop) {
