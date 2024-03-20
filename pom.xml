@@ -28,7 +28,7 @@
         <guava.vesion>23.0</guava.vesion>
         <mapper.version>4.2.3</mapper.version>
         <persistence.version>1.0.2</persistence.version>
-        <hutool.version>5.2.3</hutool.version>
+        <hutool.version>5.8.26</hutool.version>
         <junit.version>4.12</junit.version>
         <commons-codec>1.10</commons-codec>
         <mybatis.spring.boot.version>3.0.3</mybatis.spring.boot.version>

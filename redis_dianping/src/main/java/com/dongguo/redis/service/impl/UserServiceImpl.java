@@ -102,8 +102,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String token = UUID.randomUUID().toString(true);
         UserDTO userDTO = new UserDTO();
         BeanUtil.copyProperties(user, userDTO);
-        CopyOptions.create().setIgnoreNullValue(true).setFieldMapping((fieldName, filedValue) ->filedValue);
-        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),false, );
+        Map<String, Object> userMap = new HashMap<>();
+        BeanUtil.copyProperties(userDTO, userMap, new CopyOptions().setConverter((fieldName,filedValue) ->filedValue.toString()));
         stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
         stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
 //        session.setAttribute("user", userDTO);
