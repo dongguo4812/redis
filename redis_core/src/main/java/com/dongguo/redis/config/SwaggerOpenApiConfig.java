@@ -4,8 +4,11 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpHeaders;
 
 import java.util.HashMap;
 
@@ -44,6 +47,24 @@ public class SwaggerOpenApiConfig {
         // 返回信息
         return new OpenAPI()
                 .openapi("3.0.1")  // Open API 3.0.1(默认)
+                .schemaRequirement(HttpHeaders.AUTHORIZATION, this.securityScheme())
+                //全局安全校验项，也可以在对应的controller上加注解SecurityRequirement
+                .addSecurityItem(new SecurityRequirement().addList(HttpHeaders.AUTHORIZATION))
                 .info(info);       // 配置Swagger3.0描述信息
+    }
+
+    /**
+     * 参考https://springdoc.org/#how-do-i-add-authorization-header-in-requests
+     * @return
+     */
+    private SecurityScheme securityScheme() {
+        SecurityScheme securityScheme = new SecurityScheme();
+        //类型
+        securityScheme.setType(SecurityScheme.Type.APIKEY);
+        //请求头的name
+        securityScheme.setName(HttpHeaders.AUTHORIZATION);
+        //token所在未知
+        securityScheme.setIn(SecurityScheme.In.HEADER);
+        return securityScheme;
     }
 }

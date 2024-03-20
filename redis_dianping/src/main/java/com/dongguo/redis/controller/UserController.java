@@ -1,8 +1,10 @@
 package com.dongguo.redis.controller;
 
 import com.dongguo.redis.entity.BO.LoginFormBO;
+import com.dongguo.redis.entity.DTO.UserDTO;
 import com.dongguo.redis.entity.Result;
 import com.dongguo.redis.service.IUserService;
+import com.dongguo.redis.support.threadlocal.UserThreadLocalCache;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -39,5 +41,16 @@ public class UserController {
     @PostMapping("/login")
     public Result login(@RequestBody LoginFormBO loginForm, HttpSession session) {
         return userService.login(loginForm,session);
+    }
+
+    /**
+     * 请求接口时，拦截器会将session中的用户信息放入到ThreadLocal中
+     * 所以直接从ThreadLocal中获取user信息即可。
+     * @return
+     */
+    @GetMapping("/me")
+    public Result me() {
+        UserDTO user = UserThreadLocalCache.getUser();
+        return Result.ok(user);
     }
 }
