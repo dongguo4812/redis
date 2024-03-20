@@ -90,7 +90,7 @@ import java.util.Map;
         wrapper.eq(User::getPhone, loginForm.getPhone());
         User user = userMapper.selectOne(wrapper);
         if (ObjectUtil.isEmpty(user)) {
-            //注册
+            //注册新用户
             User newUser = new User()
                     .setPhone(loginForm.getPhone())
                     .setNickName(SystemConstants.USER_NICK_NAME_PREFIX + RandomUtil.randomString(SystemConstants.MAX_PAGE_SIZE));
