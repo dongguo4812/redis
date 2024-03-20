@@ -24,10 +24,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.dongguo.redis.utils.RedisConstants.LOGIN_CODE_KEY;
+import static com.dongguo.redis.utils.RedisConstants.LOGIN_CODE_TTL;
 
 /**
  * <p>
@@ -35,38 +37,38 @@ import java.util.Map;
  * </p>
  */
 @Service
-    @Slf4j
-    public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
-        @Autowired
-        private UserMapper userMapper;
-        @Resource
-        private StringRedisTemplate stringRedisTemplate;
+@Slf4j
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+    @Autowired
+    private UserMapper userMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
-        @Override
-        public Result sendCode(String phone, HttpSession session) {
-            //1校验手机号是否符合规定
-            if (StringUtils.isBlank(phone)) {
-                return Result.fail("手机号不能为空");
-            }
-            if (phone.length() != 11) {
-                return Result.fail("手机号" + phone + "不符合要求");
-            }
-            boolean isMatch = RegexUtils.isPhoneInvalid(phone);
-            if (isMatch) {
-                return Result.fail("手机号" + phone + "不符合要求");
-            }
-            //2生成验证码
-            String code = RandomUtil.randomNumbers(6);
-            //3保存到session中
-            session.setAttribute("code", code);
-            //保存到redis中
-//        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY +phone,
-//                code,
-//                Duration.ofMinutes(LOGIN_CODE_TTL));
-            //4发送验证码
-            log.debug("验证码发送成功:{}", code);
-            return Result.ok("验证码发送成功:" + code);
+    @Override
+    public Result sendCode(String phone, HttpSession session) {
+        //1校验手机号是否符合规定
+        if (StringUtils.isBlank(phone)) {
+            return Result.fail("手机号不能为空");
         }
+        if (phone.length() != 11) {
+            return Result.fail("手机号" + phone + "不符合要求");
+        }
+        boolean isMatch = RegexUtils.isPhoneInvalid(phone);
+        if (isMatch) {
+            return Result.fail("手机号" + phone + "不符合要求");
+        }
+        //2生成验证码
+        String code = RandomUtil.randomNumbers(6);
+        //3保存到session中
+//            session.setAttribute("code", code);
+        //保存到redis中
+        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone,
+                code,
+                Duration.ofMinutes(LOGIN_CODE_TTL));
+        //4发送验证码
+        log.debug("验证码发送成功:{}", code);
+        return Result.ok("验证码发送成功:" + code);
+    }
 
     @Override
     public Result login(LoginFormBO loginForm, HttpSession session) {
@@ -80,8 +82,8 @@ import java.util.Map;
         if (isMatch) {
             return Result.fail("手机号" + loginForm.getPhone() + "不符合要求");
         }
-//        String code = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
-        String code = session.getAttribute("code").toString();
+        String code = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
+//        String code = session.getAttribute("code").toString();
         if (!loginForm.getCode().equals(code)) {
             return Result.fail("验证码错误");
         }
@@ -100,10 +102,11 @@ import java.util.Map;
         String token = UUID.randomUUID().toString(true);
         UserDTO userDTO = new UserDTO();
         BeanUtil.copyProperties(user, userDTO);
-//        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, false, false);
-//        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
-//        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
-        session.setAttribute("user",userDTO);
+        CopyOptions.create().setIgnoreNullValue(true).setFieldMapping((fieldName, filedValue) ->filedValue);
+        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),false, );
+        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
+        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
+//        session.setAttribute("user", userDTO);
         return Result.ok(token);
     }
 

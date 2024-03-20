@@ -1,21 +1,24 @@
 package com.dongguo.redis.config;
 
 import com.dongguo.redis.support.interceptor.LoginInterceptor;
+import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
-
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         //登录拦截器
-        registry.addInterceptor(new LoginInterceptor())
+        registry.addInterceptor(new LoginInterceptor(stringRedisTemplate))
                 //排除不需要拦截的路径，视情况添加
                 .excludePathPatterns(
-                        "/v3/**",  //swagger也需要放心
+                        "/v3/**",  //swagger也需要排除
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/shop/**", //店铺信息
