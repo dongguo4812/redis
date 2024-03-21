@@ -27,4 +27,7 @@ public class RedisConstants {
 
 
     public static final Long CACHE_NULL_TTL = 2L;
+
+
+    public static final String CACHE_SNOWFLAKE_WORKID_key = "application:snowflake:workid";
 }
