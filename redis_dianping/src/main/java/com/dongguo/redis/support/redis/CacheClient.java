@@ -3,26 +3,19 @@ package com.dongguo.redis.support.redis;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.dongguo.redis.entity.RedisData;
-import com.dongguo.redis.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import static com.dongguo.redis.utils.RedisConstants.CACHE_NULL_TTL;
-import static com.dongguo.redis.utils.RedisConstants.LOCK_SHOP_KEY;
+import static com.dongguo.redis.utils.RedisConstants.*;
 
 
 @Slf4j
@@ -45,7 +38,7 @@ public class CacheClient {
     }
 
     /**
-     *
+     *设置逻辑过期时间
      * @param key
      * @param value
      * @param time
@@ -60,18 +53,28 @@ public class CacheClient {
         redisTemplate.opsForValue().set(key, redisData);
     }
 
+    /**
+     * 缓存空值
+     * @param keyPrefix
+     * @param id
+     * @param dbFallback
+     * @param time
+     * @param unit
+     * @return
+     * @param <R>
+     * @param <ID>
+     */
     public <R, ID> R cacheShopWithNullValue(
             String keyPrefix, ID id, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         Object object = redisTemplate.opsForValue().get(key);
         // 2.判断是否存在
-        //判空
         if (ObjectUtil.isNotEmpty(object)) {
             //缓存查到 返回
             return (R) object;
         }
-        //缓存的空值   缓存的空字符串""
+        //3.缓存的空值   缓存的空字符串""
         if (ObjectUtil.equal(object, "")) {
             return null;
         }
@@ -90,15 +93,37 @@ public class CacheClient {
         return r;
     }
 
+    /**
+     * 逻辑过期
+     * @param keyPrefix
+     * @param id
+     * @param dbFallback
+     * @param time
+     * @param unit
+     * @return
+     * @param <R>
+     * @param <ID>
+     */
     public <R, ID> R queryWithLogicalExpire(
             String keyPrefix, ID id, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         Object object = redisTemplate.opsForValue().get(key);
         // 2.判断是否存在
-        //判空
-        if (ObjectUtil.isNotEmpty(object)) {
-            //缓存查到 返回
+        //缓存的空值   缓存的空字符串""
+        if (ObjectUtil.equal(object, "")) {
+            return null;
+        }
+        if (ObjectUtil.isEmpty(object)) {
+            //3.不存在
+            //查询店铺数据
+            R r = dbFallback.apply(id);
+            if (ObjectUtil.isNotEmpty(r)) {
+                this.setWithLogicalExpire(key, r, time, unit);
+            } else {
+                //解决缓存穿透问题  缓存空对象
+                redisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+            }
             return (R) object;
         }
         // 4.命中，需要先把json反序列化为对象
@@ -136,8 +161,19 @@ public class CacheClient {
         return r;
     }
 
+    /**
+     * 互斥锁
+     * @param keyPrefix
+     * @param id
+     * @param dbFallback
+     * @param time
+     * @param unit
+     * @return
+     * @param <R>
+     * @param <ID>
+     */
     public <R, ID> R queryWithMutex(
-            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+            String keyPrefix, ID id, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         Object object = redisTemplate.opsForValue().get(key);
@@ -154,14 +190,14 @@ public class CacheClient {
         // 4.实现缓存重建
         // 4.1.获取互斥锁
         String lockKey = LOCK_SHOP_KEY + id;
-        R r = null;
+        R r;
         try {
             boolean isLock = tryLock(lockKey);
             // 4.2.判断是否获取成功
             if (!isLock) {
                 // 4.3.获取锁失败，休眠并重试
-                Thread.sleep(50);
-                return queryWithMutex(keyPrefix, id, type, dbFallback, time, unit);
+               TimeUnit.MILLISECONDS.sleep(100);
+                return queryWithMutex(keyPrefix, id, dbFallback, time, unit);
             }
             // 4.4.获取锁成功，根据id查询数据库
             r = dbFallback.apply(id);
@@ -184,11 +220,20 @@ public class CacheClient {
         return r;
     }
 
+    /**
+     * 加锁
+     * @param key
+     * @return
+     */
     private boolean tryLock(String key) {
         Boolean flag = redisTemplate.opsForValue().setIfAbsent(key, "1", 10, TimeUnit.SECONDS);
         return BooleanUtil.isTrue(flag);
     }
 
+    /**
+     * 解锁
+     * @param key
+     */
     private void unlock(String key) {
         redisTemplate.delete(key);
     }

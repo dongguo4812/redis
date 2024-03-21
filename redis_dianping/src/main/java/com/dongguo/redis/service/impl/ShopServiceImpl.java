@@ -42,10 +42,23 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result queryShopById(Long id) {
-        Shop shop = cacheClient.cacheShopWithNullValue(CACHE_SHOP_KEY, id, this::getById, CACHE_NULL_TTL, TimeUnit.MINUTES);
+        if (id == null) {
+            return Result.fail("店铺id不能为空");
+        }
+        //缓存空值
+//        Shop shop = cacheClient.cacheShopWithNullValue(CACHE_SHOP_KEY, id, this::getById, CACHE_NULL_TTL, TimeUnit.MINUTES);
+        //互斥锁
+//        Shop shop = cacheClient.queryWithMutex(CACHE_SHOP_KEY, id, this::getById, CACHE_NULL_TTL, TimeUnit.MINUTES);
+        Shop shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY, id, this::getById, CACHE_NULL_TTL, TimeUnit.MINUTES);
         return Result.ok(shop);
     }
 
+    /**
+     * 逻辑过期
+     * @param id
+     * @return
+     */
+    @Deprecated
     private Result queryWithLogicalExpire(Long id) {
         if (id == null) {
             return Result.fail("店铺id不能为空");
@@ -87,7 +100,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         return Result.ok(shop);
     }
-
+    @Deprecated
     private Shop getAndCacheShop(Long id) {
         //查询店铺数据
         Shop shop = shopMapper.selectById(id);
@@ -111,6 +124,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      * @param id
      * @return
      */
+    @Deprecated
     private Result cacheShopWithMutex(Long id) {
         if (id == null) {
             return Result.fail("店铺id不能为空");
@@ -159,6 +173,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      * @param id
      * @return
      */
+    @Deprecated
     private Result cacheShopWithNullValue(Long id) {
         if (id == null) {
             return Result.fail("店铺id不能为空");
@@ -193,6 +208,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      * @param id
      * @return
      */
+    @Deprecated
     private Result queryShop(Long id) {
         if (id == null) {
             return Result.fail("店铺id不能为空");
