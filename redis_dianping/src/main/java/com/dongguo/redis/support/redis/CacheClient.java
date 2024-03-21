@@ -61,7 +61,7 @@ public class CacheClient {
     }
 
     public <R, ID> R cacheShopWithNullValue(
-            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+            String keyPrefix, ID id, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         Object object = redisTemplate.opsForValue().get(key);
@@ -91,7 +91,7 @@ public class CacheClient {
     }
 
     public <R, ID> R queryWithLogicalExpire(
-            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+            String keyPrefix, ID id, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         Object object = redisTemplate.opsForValue().get(key);
