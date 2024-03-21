@@ -94,14 +94,14 @@ public class Voucher implements Serializable {
      */
     @TableField(exist = false)
     @Schema(name = "beginTime", description = "生效时间")
-    private LocalDateTime beginTime;
+    private Date beginTime;
 
     /**
      * 失效时间
      */
     @TableField(exist = false)
     @Schema(name = "endTime", description = "失效时间")
-    private LocalDateTime endTime;
+    private Date endTime;
 
     /**
      * 创建时间
