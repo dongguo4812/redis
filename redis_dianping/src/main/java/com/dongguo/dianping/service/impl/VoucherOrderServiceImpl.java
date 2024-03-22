@@ -215,30 +215,61 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (now.after(endTime)) {
             return Result.fail("该优惠券秒杀时间已过期");
         }
-
-
+        //3判断库存 进行扣减库存
+        Integer stock = seckillVoucher.getStock();
+        if (stock < 1) {
+            return Result.fail("该优惠券已被抢光");
+        }
+        //查询该用户是否抢购过这个优惠券
         Long userId = UserThreadLocalCache.getUser().getId();
-//        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
-//        boolean isLock = lock.tryLock(1500);
-        RLock lock = redissonClient.getLock("lock:order:" + userId);
-        //参数分别是：获取锁的最大等待时间(期间会重试)，锁自动释放时间，时间单位
-        boolean isLock = lock.tryLock();
-        if (!isLock) {
-            return Result.fail("该优惠券一个用户只能使用一次");
-        }
-        try {
-//        synchronized (userId.toString().intern()) {
-//            Result result = createVoucherOrder(seckillVoucher);
 
-            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-            return proxy.createVoucherOrder(seckillVoucher);
-        } finally {
-            lock.unlock();
+        Long count = voucherOrderService.lambdaQuery().select().eq(VoucherOrder::getVoucherId, voucherId)
+                .eq(VoucherOrder::getUserId, userId)
+                .count();
+        if (count > 0) {
+            return Result.fail("该优惠券一人只能抢购一个");
         }
-
-//        }
+        boolean result = seckillVoucherService.lambdaUpdate().setSql("stock = stock -1")
+                .eq(SeckillVoucher::getVoucherId, voucherId)
+                .gt(SeckillVoucher::getStock, 0)
+                .update();
+        if (!result) {
+            return Result.fail("该优惠券库存扣减失败");
+        }
+        //4.创建订单
+        VoucherOrder voucherOrder = new VoucherOrder();
+        // 4.1.订单id
+        long orderId = SnowflakeIdUtil.getNextId();
+        voucherOrder.setId(orderId);
+        // 4.2.用户id
+        voucherOrder.setUserId(userId);
+        // 4.3.代金券id
+        voucherOrder.setVoucherId(voucherId);
+        //订单状态默认生成为未支付 可以不写
+        voucherOrder.setStatus(1);
+        save(voucherOrder);
+        return Result.ok(orderId);
     }
+//    Long userId = UserThreadLocalCache.getUser().getId();
+//    //        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+////        boolean isLock = lock.tryLock(1500);
+//    RLock lock = redissonClient.getLock("lock:order:" + userId);
+//    //参数分别是：获取锁的最大等待时间(期间会重试)，锁自动释放时间，时间单位
+//    boolean isLock = lock.tryLock();
+//        if (!isLock) {
+//        return Result.fail("该优惠券一个用户只能使用一次");
+//    }
+//        try {
+////        synchronized (userId.toString().intern()) {
+////            Result result = createVoucherOrder(seckillVoucher);
+//
+//        IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+//        return proxy.createVoucherOrder(seckillVoucher);
+//    } finally {
+//        lock.unlock();
+//    }
 
+    //        }
     @Transactional
     @Override
     public Result createVoucherOrder(SeckillVoucher seckillVoucher) {

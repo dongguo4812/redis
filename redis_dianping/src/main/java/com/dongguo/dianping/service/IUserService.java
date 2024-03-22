@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.dongguo.dianping.entity.BO.LoginFormBO;
 import com.dongguo.dianping.entity.POJO.User;
 import com.dongguo.dianping.entity.Result;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 
@@ -18,11 +19,11 @@ public interface IUserService extends IService<User> {
 
     Result login(LoginFormBO loginForm, HttpSession session);
 
-//
-//    Result logout(HttpServletRequest request);
-//
-//    Result sign();
-//
-//    Result signCount();
+
+    Result logout(HttpServletRequest request);
+
+    Result sign();
+
+    Result signCount();
 
 }

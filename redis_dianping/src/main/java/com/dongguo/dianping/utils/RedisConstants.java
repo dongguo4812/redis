@@ -14,6 +14,8 @@ public class RedisConstants {
 
     public static final String LOGIN_USER_KEY = "login:token:";
     public static final Long LOGIN_USER_TTL = 30L;
+
+    public static final String USER_SIGN_KEY = "user:sign:";
     /**
      * shop
      */
