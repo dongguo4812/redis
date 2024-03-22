@@ -43,7 +43,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
-//    @Autowired
+    //    @Autowired
 //    private RedissonClient redissonClient;
     private IVoucherOrderService proxy;
     private static final String CLASS_PATH = "/redis/seckill.lua";
@@ -213,6 +213,12 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (now.after(endTime)) {
             return Result.fail("该优惠券秒杀时间已过期");
         }
+        return createVoucherOrder(seckillVoucher);
+    }
+
+    @Override
+    public synchronized Result createVoucherOrder(SeckillVoucher seckillVoucher) {
+        Long voucherId = seckillVoucher.getVoucherId();
         //3判断库存 进行扣减库存
         Integer stock = seckillVoucher.getStock();
         if (stock < 1) {
@@ -248,8 +254,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         save(voucherOrder);
         return Result.ok(orderId);
     }
-
-
 //    Long userId = UserThreadLocalCache.getUser().getId();
 //    //        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
 ////        boolean isLock = lock.tryLock(1500);
@@ -270,50 +274,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 //    }
 
     //        }
-    @Transactional
-    @Override
-    public Result createVoucherOrder(SeckillVoucher seckillVoucher) {
-        Long voucherId = seckillVoucher.getVoucherId();
-        //3判断库存 进行扣减库存
-        Integer stock = seckillVoucher.getStock();
-        if (stock < 1) {
-            return Result.fail("该优惠券已被抢光");
-        }
-        //查询该用户是否抢购过这个优惠券
-        Long userId = UserThreadLocalCache.getUser().getId();
-
-        Long count = lambdaQuery().select().eq(VoucherOrder::getVoucherId, voucherId)
-                .eq(VoucherOrder::getUserId, userId)
-                .count();
-        if (count > 0) {
-            return Result.fail("该优惠券一人只能抢购一个");
-        }
-//        boolean result = seckillVoucherService.update().setSql("stock = stock -1")
-//                .eq("voucher_id", voucherId)
-//                .gt("stock", 0)
-//                .update();
-
-        boolean result = seckillVoucherService.lambdaUpdate().setSql("stock = stock -1")
-                .eq(SeckillVoucher::getVoucherId, voucherId)
-                .gt(SeckillVoucher::getStock, 0)
-                .update();
-        if (!result) {
-            return Result.fail("该优惠券库存扣减失败");
-        }
-        //4.创建订单
-        VoucherOrder voucherOrder = new VoucherOrder();
-        // 4.1.订单id
-        long orderId = SnowflakeIdUtil.getNextId();
-        voucherOrder.setId(orderId);
-        // 4.2.用户id
-        voucherOrder.setUserId(userId);
-        // 4.3.代金券id
-        voucherOrder.setVoucherId(voucherId);
-        save(voucherOrder);
-        //订单状态默认生成为未支付
-        return Result.ok(orderId);
-
-    }
 
 
     @Override
