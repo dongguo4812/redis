@@ -11,18 +11,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- *  前端控制器
+ * 前端控制器
  * </p>
- *
  */
 @RestController
 @RequestMapping("/voucher-order")
 public class VoucherOrderController {
     @Autowired
     private IVoucherOrderService voucherOrderService;
+
     @PostMapping("/seckill/{id}")
     public Result seckillVoucher(@PathVariable("id") Long voucherId) {
-       Result result =  voucherOrderService.seckillVoucher(voucherId);
-        return result;
+        return voucherOrderService.seckillVoucher(voucherId);
     }
 }

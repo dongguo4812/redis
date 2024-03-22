@@ -2,6 +2,7 @@ package com.dongguo.redis.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import com.dongguo.redis.entity.POJO.SeckillVoucher;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +37,6 @@ import java.util.concurrent.Executors;
  * <p>
  * 服务实现类
  * </p>
- *
  */
 @Service
 public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
@@ -177,65 +178,68 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
     }
 
-    @Override
-    public Result seckillVoucher(Long voucherId) {
-        Long userId = UserThreadLocalCache.getUser().getId();
-        //返回订单id
-        long orderId = SnowflakeIdUtil.getNextId();
-        //1执行lua脚本
-        Long result = stringRedisTemplate.execute(SECKILL_SCRIPT,
-                Collections.emptyList(),
-                //lua脚本传的是字符串
-                voucherId.toString(), userId.toString(), String.valueOf(orderId));
-        //判断结果是否为0  第一次购买
-        int r = result.intValue();
-        if (r != 0) {
-            return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
-        }
-        //获取代理对象
-        proxy = (IVoucherOrderService) AopContext.currentProxy();
-
-        return Result.ok(orderId);
-    }
-
 //    @Override
 //    public Result seckillVoucher(Long voucherId) {
-//        //查询优惠券
-//        SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
-//        if (ObjectUtil.isEmpty(seckillVoucher)) {
-//            return Result.fail("优惠券不存在");
+//        Long userId = UserThreadLocalCache.getUser().getId();
+//        //返回订单id
+//        long orderId = SnowflakeIdUtil.getNextId();
+//        //1执行lua脚本
+//        Long result = stringRedisTemplate.execute(SECKILL_SCRIPT,
+//                Collections.emptyList(),
+//                //lua脚本传的是字符串
+//                voucherId.toString(), userId.toString(), String.valueOf(orderId));
+//        //判断结果是否为0  第一次购买
+//        int r = result.intValue();
+//        if (r != 0) {
+//            return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
 //        }
-//        //2判断优惠时间
-//        LocalDateTime beginTime = seckillVoucher.getBeginTime();
-//        LocalDateTime endTime = seckillVoucher.getEndTime();
-//        LocalDateTime now = LocalDateTime.now();
-//        if (now.isBefore(beginTime)) {
-//            return Result.fail("该优惠券秒杀时间尚未开始");
-//        }
-//        if (now.isAfter(endTime)) {
-//            return Result.fail("该优惠券秒杀时间已过期");
-//        }
-//        Long userId = UserHolder.getUser().getId();
-////        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
-////        boolean isLock = lock.tryLock(1500);
-//        RLock lock = redissonClient.getLock("lock:order:" + userId);
-//        //参数分别是：获取锁的最大等待时间(期间会重试)，锁自动释放时间，时间单位
-//        boolean isLock = lock.tryLock();
-//        if (!isLock) {
-//            return Result.fail("该优惠券一个用户只能使用一次");
-//        }
-//        try {
-////        synchronized (userId.toString().intern()) {
-////            Result result = createVoucherOrder(seckillVoucher);
+//        //获取代理对象
+//        proxy = (IVoucherOrderService) AopContext.currentProxy();
 //
-//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-//            return proxy.createVoucherOrder(seckillVoucher);
-//        }finally {
-//            lock.unlock();
-//        }
-//
-////        }
+//        return Result.ok(orderId);
 //    }
+
+    @Override
+    @Transactional
+    public Result seckillVoucher(Long voucherId) {
+        //查询优惠券
+        SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
+        if (seckillVoucher == null) {
+            return Result.fail("优惠券不存在");
+        }
+        //2判断优惠时间
+        Date beginTime = seckillVoucher.getBeginTime();
+        Date endTime = seckillVoucher.getEndTime();
+        Date now = new Date();
+        if (now.before(beginTime)) {
+            return Result.fail("该优惠券秒杀时间尚未开始");
+        }
+        if (now.after(endTime)) {
+            return Result.fail("该优惠券秒杀时间已过期");
+        }
+
+
+        Long userId = UserThreadLocalCache.getUser().getId();
+//        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+//        boolean isLock = lock.tryLock(1500);
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
+        //参数分别是：获取锁的最大等待时间(期间会重试)，锁自动释放时间，时间单位
+        boolean isLock = lock.tryLock();
+        if (!isLock) {
+            return Result.fail("该优惠券一个用户只能使用一次");
+        }
+        try {
+//        synchronized (userId.toString().intern()) {
+//            Result result = createVoucherOrder(seckillVoucher);
+
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(seckillVoucher);
+        } finally {
+            lock.unlock();
+        }
+
+//        }
+    }
 
     @Transactional
     @Override
@@ -282,7 +286,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     }
 
-    @Transactional
+
     @Override
     public void createVoucherOrder(VoucherOrder voucherOrder) {
         //查询该用户是否抢购过这个优惠券
