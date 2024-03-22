@@ -68,4 +68,12 @@ public class VoucherController {
     public Result queryVoucherOfShop(@PathVariable("shopId") Long shopId) {
        return voucherService.queryVoucherOfShop(shopId);
     }
+    @Operation(
+            summary = "seckill",
+            description = "优惠券秒杀"
+    )
+    @GetMapping("/seckill/{voucherId}")
+    public Result seckillVoucher(@PathVariable("voucherId") Long voucherId) {
+        return voucherService.seckillVoucher(voucherId);
+    }
 }

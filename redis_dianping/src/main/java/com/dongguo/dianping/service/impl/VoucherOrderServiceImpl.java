@@ -152,37 +152,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 //     */
 //    private void handleVoucherOrder(VoucherOrder voucherOrder) {
 //    }
-    @Resource
-    private DistributedLockFactory distributedLockFactory;
 
-    @Override
-    public Result seckillVoucher(Long voucherId) {
-        //查询优惠券
-        SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
-        if (seckillVoucher == null) {
-            return Result.fail("优惠券不存在");
-        }
-        //2判断优惠时间
-        Date beginTime = seckillVoucher.getBeginTime();
-        Date endTime = seckillVoucher.getEndTime();
-        Date now = new Date();
-        if (now.before(beginTime)) {
-            return Result.fail("该优惠券秒杀时间尚未开始");
-        }
-        if (now.after(endTime)) {
-            return Result.fail("该优惠券秒杀时间已过期");
-        }
-        Long userId = UserThreadLocalCache.getUser().getId();
-        Lock lock = distributedLockFactory.getDistributedLock("redis", LOCK_VOUCHER_ORDER_KEY + userId + ":" + voucherId);
-        lock.lock();
-        Result result;
-        try {
-            result = createVoucherOrder(seckillVoucher, userId);
-        } finally {
-            lock.unlock();
-        }
-        return result;
-    }
+
+
 
     /**
      * @param seckillVoucher
@@ -198,7 +170,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("该优惠券已被抢光");
         }
         //查询该用户是否抢购过这个优惠券
-
 
         Long count = lambdaQuery().select().eq(VoucherOrder::getVoucherId, voucherId)
                 .eq(VoucherOrder::getUserId, userId)
