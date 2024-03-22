@@ -46,7 +46,7 @@ public class VoucherController {
      * @return 优惠券id
      */
     @Operation(
-            summary = "seckill",
+            summary = "addSeckill",
             description = "新增秒杀券"
     )
     @PostMapping("/seckill")
