@@ -21,8 +21,8 @@ public class VoucherOrderController {
     @Autowired
     private IVoucherOrderService voucherOrderService;
 
-    @PostMapping("/seckill")
-    public Result seckillVoucher(@RequestParam("voucherId") Long voucherId) {
+    @GetMapping("/seckill/{voucherId}")
+    public Result seckillVoucher(@PathVariable("voucherId") Long voucherId) {
         return voucherOrderService.seckillVoucher(voucherId);
     }
 }
