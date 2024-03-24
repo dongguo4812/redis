@@ -43,6 +43,7 @@
         <canal.spring.boot.version>1.2.1-RELEASE</canal.spring.boot.version>
         <mybatis.plus.spring.boot.version>3.5.5</mybatis.plus.spring.boot.version>
         <mybatis.spring.version>3.0.3</mybatis.spring.version>
+        <oss.version>3.17.4</oss.version>
     </properties>
 
     <dependencyManagement>
@@ -228,6 +229,11 @@
                 <groupId>org.mybatis</groupId>
                 <artifactId>mybatis-spring</artifactId>
                 <version>${mybatis.spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun.oss</groupId>
+                <artifactId>aliyun-sdk-oss</artifactId>
+                <version>${oss.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

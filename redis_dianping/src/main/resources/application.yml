@@ -21,6 +21,13 @@ spring:
           time-between-eviction-runs: 10s
   jackson:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
+
+oss:
+  endpoint: ${OSS_ENDPOINT}
+  accessKeyId: ${OSS_ACCESSKEYID}
+  accessKeySecret: ${OSS_ACCESSKEYSECRET}
+  bucketName: ${OSS_BUCKETNAME}
+
 mybatis-plus:
   type-aliases-package: com.dongguo.dianping.entity # 别名扫描包
 logging:
