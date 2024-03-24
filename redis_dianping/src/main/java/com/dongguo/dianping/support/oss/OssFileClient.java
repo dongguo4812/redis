@@ -7,9 +7,16 @@ import cn.hutool.core.util.StrUtil;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.OSSObject;
+import com.aliyuncs.utils.IOUtils;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.Collection;
+
+import static com.dongguo.dianping.utils.SystemConstants.IMAGE_UPLOAD_DIR;
 
 /**
  * @author admin
@@ -81,11 +88,18 @@ public class OssFileClient {
         if (fileName.startsWith(publicUrl)) {
             fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
         }
+        String oldFileName = fileName;
+        //2024/03/24/1711241401394.jpg
+        int lastSlashIndex = fileName.lastIndexOf('.');
+        if (lastSlashIndex != -1) {
+            //1711241401394.jpg
+            fileName = fileName.substring(lastSlashIndex);
+        }
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         String timeUrl = new DateTime().toString("yyyy/MM/dd");
         String newFileName = timeUrl + "/" + uuid + fileName;
-        client.copyObject(config.getBucketName(), fileName, config.getBucketName(), newFileName);
-        deleteByFileName(fileName);
+        client.copyObject(config.getBucketName(), oldFileName, config.getBucketName(), newFileName);
+        deleteByFileName(oldFileName);
         return "https://" + config.getBucketName() + "." + config.getEndpoint() + "/" + newFileName;
     }
 
@@ -96,15 +110,35 @@ public class OssFileClient {
      * @return 文件流，可能为空
      */
 
-    public InputStream downFile(String fileName) {
+    public void downFile(String fileName, HttpServletResponse response) throws Exception {
         OSSObject object;
         try {
             if (fileName.startsWith(publicUrl)) {
                 fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
             }
             object = client.getObject(config.getBucketName(), fileName);
+            int lastSlashIndex = fileName.lastIndexOf('/');
+            if (lastSlashIndex != -1) {
+                //1711241401394.jpg
+                fileName = fileName.substring(lastSlashIndex + 1);
+            }
             byte[] bytes = IoUtil.readBytes(object.getObjectContent());
-            return new ByteArrayInputStream(bytes);
+
+            // 清空response
+            response.reset();
+            // 设置response的Header
+            response.setCharacterEncoding("UTF-8");
+            //Content-Disposition的作用：告知浏览器以何种方式显示响应返回的文件，用浏览器打开还是以附件的形式下载到本地保存
+            //attachment表示以附件方式下载 inline表示在线打开 "Content-Disposition: inline; filename=文件名.mp3"
+            // filename表示文件的默认名称，因为网络传输只支持URL编码的相关支付，因此需要将文件名URL编码后进行传输,前端收到后需要反编码才能获取到真正的名称
+            response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
+            // 告知浏览器文件的大小
+            OutputStream outputStream = new BufferedOutputStream(response.getOutputStream());
+            response.setContentType("application/octet-stream");
+            outputStream.write(bytes);
+            outputStream.flush();
+        } catch (IOException ex) {
+            ex.printStackTrace();
         } finally {
             client.shutdown();
         }
@@ -132,7 +166,10 @@ public class OssFileClient {
         }
     }
 
-
+    /**
+     * 批量删除
+     * @param urls
+     */
     public void batchDeleteFileByUrl(Collection<String> urls) {
         try {
             for (String url : urls) {
