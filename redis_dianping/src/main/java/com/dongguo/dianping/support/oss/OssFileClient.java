@@ -1,11 +1,15 @@
 package com.dongguo.dianping.support.oss;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.StrUtil;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.OSSObject;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
+import java.util.Collection;
 
 /**
  * @author admin
@@ -14,6 +18,8 @@ import java.io.*;
 public class OssFileClient {
     private final OssProperties config;
     private final OSS client;
+
+    private final String publicUrl = "https://yygh-dongguo.oss-cn-beijing.aliyuncs.com/";
 
     public OssFileClient(OssProperties config) {
         this.config = config;
@@ -33,117 +39,111 @@ public class OssFileClient {
         String fileName = file.getOriginalFilename();
         //按照当前日期，创建文件夹，上传到创建文件夹里面
         //  2021/02/02/01.jpg
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         String timeUrl = new DateTime().toString("yyyy/MM/dd");
-        fileName = timeUrl + "/" + fileName;
+        fileName = timeUrl + "/" + uuid + fileName;
         //调用方法实现上传
         try {
-            PutObjectResult result = client.putObject(config.getBucketName(), fileName, inputStream);
+            client.putObject(config.getBucketName(), fileName, inputStream);
             // https://yygh-atguigu.oss-cn-beijing.aliyuncs.com/01.jpg
-            String url = "https://"+config.getBucketName()+"."+config.getEndpoint()+"/"+fileName;
             //返回
-            return url;
+            return "https://" + config.getBucketName() + "." + config.getEndpoint() + "/" + fileName;
         } finally {
             client.shutdown();
         }
     }
 
-//    /**
-//     * 删除文件
-//     *
-//     * @param entity 参数对象
-//     * @return result
-//     */
-//    public void deleteFile(UploadEntity entity) {
-//        String key = entity.getFileId() + StrUtil.DASHED + entity.getName();
-//        try {
-//            clint.deleteObject(config.getBucketName().get(entity.getIsPublic()), key);
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
-//
-//    public void deleteFileByUrl(String url) {
-//        String key = url.replace(config.getPublicUrl(), StrUtil.EMPTY);
-//        try {
-//            clint.deleteObject(config.getBucketName().get(Const.StrNum.ONE), key);
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
-//
-//    /**
-//     * 重命名文件
-//     *
-//     * @param entity   参数对象
-//     * @param fileName 文件名称
-//     * @return result
-//     */
-//
-//    public void renameFile(UploadEntity entity, String fileName) {
-//        String key = entity.getFileId() + StrUtil.DASHED;
-//        clint.copyObject(config.getBucketName().get(entity.getIsPublic()), key + entity.getName(), config.getBucketName().get(entity.getIsPublic()), key + fileName);
-//        deleteFile(entity);
-//    }
-//
-//    /**
-//     * 获取文件
-//     *
-//     * @param entity 参数对象
-//     * @return 文件流，可能为空
-//     */
-//
-//    public InputStream downFile(UploadEntity entity) {
-//        OSSObject object = null;
-//        try {
-//            object = clint.getObject(config.getBucketName().get(entity.getIsPublic()), entity.getPath());
-//            byte[] bytes = IoUtil.readBytes(object.getObjectContent());
-//            return new ByteArrayInputStream(bytes);
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
-//
-//    /**
-//     * 获取文件二进制
-//     *
-//     * @param entity 参数对象
-//     * @return 文件流，可能为空
-//     */
-//
-//    public byte[] getFileBytes(UploadEntity entity) {
-//        OSSObject object = null;
-//        try {
-//            //去除Url前缀
-//            String key = entity.getPath().replace(config.getPublicUrl(), StrUtil.EMPTY);
-//            object = clint.getObject(config.getBucketName().get(entity.getIsPublic()), key);
-//            byte[] bytes = IoUtil.readBytes(object.getObjectContent());
-//            return bytes;
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
-//
-//    public void downFileByUrl(String url, File file) {
-//        String key = url.replace(config.getPublicUrl(), StrUtil.EMPTY);
-//        try {
-//            clint.getObject(new GetObjectRequest(config.getBucketName().get(Const.StrNum.ONE), key), file);
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
-//
-//
-//    public void batchDeleteFileByUrl(Collection<String> urls) {
-//        try {
-//            for (String url : urls) {
-//                String key = url.replace(config.getPublicUrl(), StrUtil.EMPTY);
-//                boolean exist = clint.doesObjectExist(config.getBucketName().get(Const.StrNum.ONE), key);
-//                if (exist) {
-//                    clint.deleteObject(config.getBucketName().get(Const.StrNum.ONE), key);
-//                }
-//            }
-//        } finally {
-//            clint.shutdown();
-//        }
-//    }
+    /**
+     * 删除文件
+     *
+     * @param fileName 参数对象  filename: 2024/03/24/1711241401394.jpg
+     * @return result
+     */
+    public void deleteByFileName(String fileName) {
+        if (fileName.startsWith(publicUrl)) {
+            fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
+        }
+        try {
+            client.deleteObject(config.getBucketName(), fileName);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    /**
+     * 重命名文件
+     *
+     * @param fileName 文件名称
+     * @return result
+     */
+
+    public String renameFile(String fileName) {
+        if (fileName.startsWith(publicUrl)) {
+            fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
+        }
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+        String timeUrl = new DateTime().toString("yyyy/MM/dd");
+        String newFileName = timeUrl + "/" + uuid + fileName;
+        client.copyObject(config.getBucketName(), fileName, config.getBucketName(), newFileName);
+        deleteByFileName(fileName);
+        return "https://" + config.getBucketName() + "." + config.getEndpoint() + "/" + newFileName;
+    }
+
+    /**
+     * 获取文件
+     *
+     * @param fileName 参数对象
+     * @return 文件流，可能为空
+     */
+
+    public InputStream downFile(String fileName) {
+        OSSObject object;
+        try {
+            if (fileName.startsWith(publicUrl)) {
+                fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
+            }
+            object = client.getObject(config.getBucketName(), fileName);
+            byte[] bytes = IoUtil.readBytes(object.getObjectContent());
+            return new ByteArrayInputStream(bytes);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    /**
+     * 获取文件二进制
+     *
+     * @param fileName 参数对象
+     * @return 文件流，可能为空
+     */
+
+    public byte[] getFileBytes(String fileName) {
+        OSSObject object;
+        try {
+            //去除Url前缀
+            if (fileName.startsWith(publicUrl)) {
+                fileName = fileName.replace(publicUrl, StrUtil.EMPTY);
+            }
+            object = client.getObject(config.getBucketName(), fileName);
+            byte[] bytes = IoUtil.readBytes(object.getObjectContent());
+            return bytes;
+        } finally {
+            client.shutdown();
+        }
+    }
+
+
+    public void batchDeleteFileByUrl(Collection<String> urls) {
+        try {
+            for (String url : urls) {
+                String key = url.replace(publicUrl, StrUtil.EMPTY);
+                boolean exist = client.doesObjectExist(config.getBucketName(), key);
+                if (exist) {
+                    client.deleteObject(config.getBucketName(), key);
+                }
+            }
+        } finally {
+            client.shutdown();
+        }
+    }
 }

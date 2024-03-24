@@ -1,6 +1,5 @@
 package com.dongguo.dianping.controller;
 
-import cn.hutool.core.io.FileUtil;
 import com.dongguo.dianping.entity.Result;
 import com.dongguo.dianping.support.oss.OssFileClientFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,10 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
 import java.io.IOException;
-
-import static com.dongguo.dianping.utils.SystemConstants.IMAGE_UPLOAD_DIR;
 
 @Slf4j
 @RestController
@@ -39,13 +35,13 @@ public class UploadController {
         }
     }
 
-    @GetMapping("/blog/delete")
-    public Result deleteBlogImg(@RequestParam("name") String filename) {
-        File file = new File(IMAGE_UPLOAD_DIR, filename);
-        if (file.isDirectory()) {
-            return Result.fail("错误的文件名称");
-        }
-        FileUtil.del(file);
+    /**
+     * @param filename
+     * @return
+     */
+    @GetMapping("/deleteByFileName")
+    public Result deleteByFileName(@RequestParam("name") String filename) {
+        OssFileClientFactory.build().deleteByFileName(filename);
         return Result.ok();
     }
 }
