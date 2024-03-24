@@ -8,6 +8,7 @@ import com.dongguo.dianping.entity.POJO.Blog;
 import com.dongguo.dianping.entity.Result;
 import com.dongguo.dianping.service.IBlogService;
 import com.dongguo.dianping.support.threadlocal.UserThreadLocalCache;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -32,10 +33,18 @@ public class BlogController {
     private IBlogService blogService;
 
     @PostMapping
+    @Operation(
+            summary = "saveBlog",
+            description = "发布笔记"
+    )
     public Result saveBlog(@RequestBody Blog blog) {
         return blogService.saveBlog(blog);
     }
     @GetMapping("/{id}")
+    @Operation(
+            summary = "queryBlogById",
+            description = "查看笔记"
+    )
     public Result queryBlogById(@PathVariable("id") Long id) {
         return blogService.queryBlogById(id);
     }

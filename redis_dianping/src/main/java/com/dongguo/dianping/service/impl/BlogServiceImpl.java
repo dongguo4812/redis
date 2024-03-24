@@ -74,13 +74,9 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         if (ObjectUtil.isEmpty(blog)){
             return Result.fail("笔记不存在");
         }
-        Long userId = blog.getUserId();
-        User user = userService.getById(userId);
-        blog.setIcon(user.getIcon());
-        blog.setName(user.getNickName());
-        isBlogLiked(blog);
+        //补充笔记用户相关信息
+        queryBlogUser(blog);
         return Result.ok(blog);
-
     }
 
     private void isBlogLiked(Blog blog) {
