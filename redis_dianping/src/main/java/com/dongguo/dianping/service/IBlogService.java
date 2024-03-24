@@ -13,7 +13,7 @@ import com.dongguo.dianping.entity.Result;
 public interface IBlogService extends IService<Blog> {
     Result saveBlog(Blog blog);
 
-//    Result queryBlogById(Long id);
+    Result queryBlogById(Long id);
 //
 //    Result likeBlog(Long id);
 //

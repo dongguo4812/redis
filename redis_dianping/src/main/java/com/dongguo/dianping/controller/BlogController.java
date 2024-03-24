@@ -35,11 +35,11 @@ public class BlogController {
     public Result saveBlog(@RequestBody Blog blog) {
         return blogService.saveBlog(blog);
     }
-//    @GetMapping("/{id}")
-//    public Result queryBlogById(@PathVariable("id") Long id) {
-//        return blogService.queryBlogById(id);
-//    }
-//
+    @GetMapping("/{id}")
+    public Result queryBlogById(@PathVariable("id") Long id) {
+        return blogService.queryBlogById(id);
+    }
+
 //
 //    @PutMapping("/like/{id}")
 //    public Result likeBlog(@PathVariable("id") Long id) {

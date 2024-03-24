@@ -106,6 +106,4 @@ public class Blog implements Serializable {
      */
     @Schema(name = "updateTime", description = "更新时间")
     private Date updateTime;
-
-
 }

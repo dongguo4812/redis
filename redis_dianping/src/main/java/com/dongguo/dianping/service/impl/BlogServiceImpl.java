@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dongguo.dianping.utils.RedisConstants.BLOG_LIKED_KEY;
+
 /**
  * <p>
  *  服务实现类
@@ -66,24 +68,26 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         // 返回id
         return Result.ok();
     }
-//    @Override
-//    public Result queryBlogById(Long id) {
-//        Blog blog = getById(id);
-//        if (ObjectUtil.isEmpty(blog)){
-//            return Result.fail("笔记不存在");
-//        }
-//        queryBlogUser(blog);
-//        isBlogLiked(blog);
-//        return Result.ok(blog);
-//
-//    }
-//
-//    private void isBlogLiked(Blog blog) {
-//        Long userId = UserThreadLocalCache.getUser().getId();
-//
-//        Double score = stringRedisTemplate.opsForZSet().score(RedisConstants.BLOG_LIKED_KEY + blog.getId(), userId.toString());
-//        blog.setIsLike(ObjectUtil.isNotEmpty(score));
-//    }
+    @Override
+    public Result queryBlogById(Long id) {
+        Blog blog = getById(id);
+        if (ObjectUtil.isEmpty(blog)){
+            return Result.fail("笔记不存在");
+        }
+        Long userId = blog.getUserId();
+        User user = userService.getById(userId);
+        blog.setIcon(user.getIcon());
+        blog.setName(user.getNickName());
+        isBlogLiked(blog);
+        return Result.ok(blog);
+
+    }
+
+    private void isBlogLiked(Blog blog) {
+        Long userId = UserThreadLocalCache.getUser().getId();
+        Double score = stringRedisTemplate.opsForZSet().score(BLOG_LIKED_KEY + blog.getId(), userId.toString());
+        blog.setIsLike(ObjectUtil.isNotEmpty(score));
+    }
 //
 //    @Override
 //    public Result likeBlog(Long id) {
@@ -186,10 +190,10 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 //        return Result.ok(result);
 //    }
 //
-//    private void queryBlogUser(Blog blog) {
-//        Long userId = blog.getUserId();
-//        User user = userService.getById(userId);
-//        blog.setIcon(user.getIcon());
-//        blog.setName(user.getNickName());
-//    }
+    private void queryBlogUser(Blog blog) {
+        Long userId = blog.getUserId();
+        User user = userService.getById(userId);
+        blog.setIcon(user.getIcon());
+        blog.setName(user.getNickName());
+    }
 }

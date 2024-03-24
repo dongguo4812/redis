@@ -1,8 +1,5 @@
 package com.dongguo.dianping.controller;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.extra.servlet.ServletUtil;
 import com.dongguo.dianping.entity.Result;
 import com.dongguo.dianping.support.oss.OssFileClientFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,9 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-import java.io.InputStream;
 
 @Slf4j
 @RestController
@@ -45,6 +40,10 @@ public class UploadController {
      * @param filename
      * @return
      */
+    @Operation(
+            summary = "deleteByFileName",
+            description = "删除"
+    )
     @GetMapping("/deleteByFileName")
     public Result deleteByFileName(@RequestParam("name") String filename) {
         OssFileClientFactory.build().deleteByFileName(filename);
@@ -55,6 +54,10 @@ public class UploadController {
      * @param filename
      * @return
      */
+    @Operation(
+            summary = "renameFile",
+            description = "重命名"
+    )
     @GetMapping("/renameFile")
     public Result renameFile(@RequestParam("name") String filename) {
         String newFileName = OssFileClientFactory.build().renameFile(filename);
@@ -65,6 +68,10 @@ public class UploadController {
      * @param filename
      * @return
      */
+    @Operation(
+            summary = "downFile",
+            description = "下载"
+    )
     @GetMapping("/downFile")
     public Result downFile(@RequestParam("name") String filename, HttpServletResponse response) throws Exception {
         OssFileClientFactory.build().downFile(filename, response);

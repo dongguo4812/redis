@@ -32,6 +32,9 @@ public class RedisConstants {
      */
     public static final String SECKILL_STOCK_KEY = "seckill:stock:";
     public  static final String LOCK_VOUCHER_ORDER_KEY="voucher:order:lock:";
-
+    /**
+     *blog
+     */
+    public static final String BLOG_LIKED_KEY = "blog:liked:";
     public static final String CACHE_SNOWFLAKE_WORKID_key = "application:snowflake:workid";
 }
