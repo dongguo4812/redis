@@ -23,10 +23,10 @@ spring:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
 
 oss:
-  endpoint: ${OSS_ENDPOINT}
-  accessKeyId: ${OSS_ACCESSKEYID}
-  accessKeySecret: ${OSS_ACCESSKEYSECRET}
-  bucketName: ${OSS_BUCKETNAME}
+  endpoint: ${endpoint}
+  accessKeyId: ${accessKeyId}
+  accessKeySecret: ${accessKeySecret}
+  bucketName: ${bucketName}
 
 mybatis-plus:
   type-aliases-package: com.dongguo.dianping.entity # 别名扫描包
