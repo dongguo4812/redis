@@ -13,6 +13,7 @@
         <module>redis_core</module>
         <module>redis_canal</module>
         <module>redis_dianping</module>
+        <module>redis_item</module>
     </modules>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
