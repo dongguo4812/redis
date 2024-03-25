@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -86,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return Result.fail("手机号" + loginForm.getPhone() + "不符合要求");
         }
         Object obj = redisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
-        if (obj == null){
+        if (obj == null) {
             return Result.fail("验证码错误");
         }
 //        String code = session.getAttribute("code").toString();
@@ -106,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         UserDTO userDTO = new UserDTO();
         BeanUtil.copyProperties(user, userDTO);
         Map<String, Object> userMap = new HashMap<>();
-        BeanUtil.copyProperties(userDTO, userMap, new CopyOptions().setConverter((fieldName,filedValue) ->filedValue.toString()));
+        BeanUtil.copyProperties(userDTO, userMap, new CopyOptions().setConverter((fieldName, filedValue) -> filedValue.toString()));
         redisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token, userMap);
         redisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token, Duration.ofMinutes(RedisConstants.LOGIN_USER_TTL));
 //        session.setAttribute("user", userDTO);
@@ -133,7 +134,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         int dayOfMonth = now.getDayOfMonth();
         // 5.写入Redis SETBIT key offset 1
         Boolean isSuccess = redisTemplate.opsForValue().setBit(key, dayOfMonth - 1, true);
-        if (!isSuccess){
+        if (!isSuccess) {
             return Result.fail("签到失败");
         }
         return Result.ok();
@@ -169,7 +170,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             if ((num & 1) == 0) {
                 // 如果为0，说明未签到，结束
                 break;
-            }else {
+            } else {
                 // 如果不为0，说明已签到，计数器+1
                 count++;
             }

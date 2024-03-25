@@ -127,7 +127,7 @@ public class UserController {
     }
     @Operation(
             summary = "signCount",
-            description = "签到数"
+            description = "签到统计"
     )
     @GetMapping("/sign/count")
     public Result signCount(){
