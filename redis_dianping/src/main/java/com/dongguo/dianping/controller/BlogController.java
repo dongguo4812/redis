@@ -49,19 +49,27 @@ public class BlogController {
         return blogService.queryBlogById(id);
     }
 
-//
-//    @PutMapping("/like/{id}")
-//    public Result likeBlog(@PathVariable("id") Long id) {
-//        // 修改点赞数量
-//        return blogService.likeBlog(id);
-//    }
-//
-//    @GetMapping("/likes/{id}")
-//    public Result queryBlogLikes(@PathVariable("id") Long id) {
-//
-//        return blogService.queryBlogLikes(id);
-//    }
-//
+
+    @PutMapping("/like/{id}")
+    @Operation(
+            summary = "likeBlog",
+            description = "点赞笔记"
+    )
+    public Result likeBlog(@PathVariable("id") Long id) {
+        // 修改点赞数量
+        return blogService.likeBlog(id);
+    }
+
+    @GetMapping("/likes/{id}")
+    @Operation(
+            summary = "queryBlogLikes",
+            description = "前五名笔记点赞列表"
+    )
+    public Result queryBlogLikes(@PathVariable("id") Long id) {
+
+        return blogService.queryBlogLikes(id);
+    }
+
 //    @GetMapping("/of/me")
 //    public Result queryMyBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
 //        // 获取登录用户

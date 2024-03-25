@@ -29,9 +29,8 @@ import static com.dongguo.dianping.utils.RedisConstants.BLOG_LIKED_KEY;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
- *
  */
 @Service
 public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IBlogService {
@@ -48,12 +47,12 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         blog.setUserId(user.getId());
 
         String title = blog.getTitle();
-        if (StrUtil.isBlank(title)){
+        if (StrUtil.isBlank(title)) {
             return Result.fail("标题不能为空");
         }
         // 保存探店博文
         boolean isSuccess = save(blog);
-        if (!isSuccess){
+        if (!isSuccess) {
             return Result.fail("新增笔记失败");
         }
 //        List<Follow> followList = followService.lambdaQuery().eq(Follow::getFollowUserId, user.getId()).list();
@@ -68,10 +67,11 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         // 返回id
         return Result.ok();
     }
+
     @Override
     public Result queryBlogById(Long id) {
         Blog blog = getById(id);
-        if (ObjectUtil.isEmpty(blog)){
+        if (ObjectUtil.isEmpty(blog)) {
             return Result.fail("笔记不存在");
         }
         //补充笔记用户相关信息
@@ -84,32 +84,39 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         Double score = stringRedisTemplate.opsForZSet().score(BLOG_LIKED_KEY + blog.getId(), userId.toString());
         blog.setIsLike(ObjectUtil.isNotEmpty(score));
     }
-//
-//    @Override
-//    public Result likeBlog(Long id) {
-//        Long userId = UserThreadLocalCache.getUser().getId();
-//
-//        Double score = stringRedisTemplate.opsForZSet().score(RedisConstants.BLOG_LIKED_KEY + id, userId.toString());
-//        if (ObjectUtil.isEmpty(score)){
-//            //为点过赞，新增点赞并缓存
-//            boolean result = update().setSql("liked = liked + 1").eq("id", id).update();
-//            if (!result){
-//                return Result.fail("点赞失败");
-//            }
-////            stringRedisTemplate.opsForSet().add(RedisConstants.BLOG_LIKED_KEY + id , userId.toString());
-//            stringRedisTemplate.opsForZSet().add(RedisConstants.BLOG_LIKED_KEY + id , userId.toString(),System.currentTimeMillis());
-//        }else {
-//            //点过赞  取消点赞并删除缓存
-//            boolean result = update().setSql("liked = liked - 1").eq("id", id).update();
-//            if (!result){
-//                return Result.fail("点赞失败");
-//            }
-////            stringRedisTemplate.opsForSet().remove(RedisConstants.BLOG_LIKED_KEY + id , userId.toString());
-//            stringRedisTemplate.opsForZSet().remove(RedisConstants.BLOG_LIKED_KEY + id , userId.toString());
-//        }
-//        return Result.ok();
-//    }
-//
+
+    @Override
+    public Result likeBlog(Long id) {
+        Long userId = UserThreadLocalCache.getUser().getId();
+
+        Double score = stringRedisTemplate.opsForZSet().score(BLOG_LIKED_KEY + id, userId.toString());
+        if (ObjectUtil.isEmpty(score)) {
+            //未点过赞，新增点赞并缓存
+            boolean result = lambdaUpdate()
+                    .setSql("liked = liked + 1")
+                    .eq(Blog::getId, id)
+                    .update();
+            if (!result) {
+                return Result.fail("点赞失败");
+            }
+//            stringRedisTemplate.opsForSet().add(RedisConstants.BLOG_LIKED_KEY + id , userId.toString());
+            stringRedisTemplate.opsForZSet().add(BLOG_LIKED_KEY + id, userId.toString(), System.currentTimeMillis());
+        } else {
+            //点过赞  取消点赞并删除缓存
+            boolean result = lambdaUpdate()
+                    .setSql("liked = liked - 1")
+                    .eq(Blog::getId, id)
+                    .update();
+            if (!result) {
+                return Result.fail("点赞失败");
+            }
+//            stringRedisTemplate.opsForSet().remove(RedisConstants.BLOG_LIKED_KEY + id , userId.toString());
+            stringRedisTemplate.opsForZSet().remove(BLOG_LIKED_KEY + id, userId.toString());
+        }
+        return Result.ok();
+    }
+
+    //
 //    @Override
 //    public Result queryHotBlog(Integer current) {
 //        // 根据用户查询
@@ -126,25 +133,27 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 //        return Result.ok(records);
 //    }
 //
-//    @Override
-//    public Result queryBlogLikes(Long id) {
-//
-//        Set<String> topFive = stringRedisTemplate.opsForZSet().range(RedisConstants.BLOG_LIKED_KEY + id, 0, 4);
-//        if (CollUtil.isEmpty(topFive)){
-//            return Result.ok(Collections.emptyList());
-//        }
-//
-//        List<Long> ids = topFive.stream().map(Long::valueOf).collect(Collectors.toList());
-//        //userService.listByIds(ids)//数据库in(5,1)查询出来的数据并不是和传入id的顺序一致
-//        String idsStr = StrUtil.join(",", ids);
-//        userService.lambdaQuery().select().in(User::getId,ids).last("ORDER BY FIELD(id," + idsStr + ")").list();
-//        List<UserDTO> userDTOList = userService.listByIds(ids)
-//                .stream().map((user) -> BeanUtil.copyProperties(user, UserDTO.class)).collect(Collectors.toList());
-//        return Result.ok(userDTOList);
-//    }
-//
-//
-//
+    @Override
+    public Result queryBlogLikes(Long id) {
+
+        Set<String> topFive = stringRedisTemplate.opsForZSet().range(BLOG_LIKED_KEY + id, 0, 4);
+        if (CollUtil.isEmpty(topFive)){
+            return Result.ok(Collections.emptyList());
+        }
+
+        List<Long> ids = topFive.stream().map(Long::valueOf).collect(Collectors.toList());
+        String idsStr = StrUtil.join(",", ids);
+        userService.lambdaQuery().select()
+                .in(User::getId,ids)
+                .last("ORDER BY FIELD(id," + idsStr + ")")
+                .list();
+        List<UserDTO> userDTOList = userService.listByIds(ids)
+                .stream().map((user) -> BeanUtil.copyProperties(user, UserDTO.class)).collect(Collectors.toList());
+        return Result.ok(userDTOList);
+    }
+
+
+    //
 //    @Override
 //    public Result queryBlogOfFollow(Long max, Integer offset) {
 //        Long userId = UserThreadLocalCache.getUser().getId();

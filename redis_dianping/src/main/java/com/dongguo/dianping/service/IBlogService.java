@@ -14,12 +14,12 @@ public interface IBlogService extends IService<Blog> {
     Result saveBlog(Blog blog);
 
     Result queryBlogById(Long id);
-//
-//    Result likeBlog(Long id);
+
+    Result likeBlog(Long id);
 //
 //    Result queryHotBlog(Integer current);
-//
-//    Result queryBlogLikes(Long id);
+
+    Result queryBlogLikes(Long id);
 //
 //
 //

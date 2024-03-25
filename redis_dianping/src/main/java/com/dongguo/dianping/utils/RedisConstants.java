@@ -36,5 +36,9 @@ public class RedisConstants {
      *blog
      */
     public static final String BLOG_LIKED_KEY = "blog:liked:";
+    /**
+     * follows
+     */
+    public static final String USER_FOLLOWS = "follows:";
     public static final String CACHE_SNOWFLAKE_WORKID_key = "application:snowflake:workid";
 }
