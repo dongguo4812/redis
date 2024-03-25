@@ -26,17 +26,16 @@ public class FollowController {
     @PutMapping("/{id}/{isFollow}")
     @Operation(
             summary = "follow",
-            description = "关注"
+            description = "关注、取消关注"
     )
     public Result follow(@PathVariable("id") Long followUserId, @PathVariable("isFollow") Boolean isFollow) {
         return followService.follow(followUserId, isFollow);
     }
 
-    //取消关注
     @GetMapping("/or/not/{id}")
     @Operation(
             summary = "isFollow",
-            description = "取消关注"
+            description = "是否被关注"
     )
     public Result isFollow(@PathVariable("id") Long followUserId) {
         return followService.isFollow(followUserId);

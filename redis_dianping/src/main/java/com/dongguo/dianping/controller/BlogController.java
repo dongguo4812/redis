@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 import static com.dongguo.dianping.utils.SystemConstants.MAX_PAGE_SIZE;
@@ -20,7 +21,6 @@ import static com.dongguo.dianping.utils.SystemConstants.MAX_PAGE_SIZE;
  * <p>
  * 前端控制器
  * </p>
- *
  */
 @RestController
 @RequestMapping("/blog")
@@ -40,6 +40,7 @@ public class BlogController {
     public Result saveBlog(@RequestBody Blog blog) {
         return blogService.saveBlog(blog);
     }
+
     @GetMapping("/{id}")
     @Operation(
             summary = "queryBlogById",
@@ -70,7 +71,7 @@ public class BlogController {
         return blogService.queryBlogLikes(id);
     }
 
-//    @GetMapping("/of/me")
+    //    @GetMapping("/of/me")
 //    public Result queryMyBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
 //        // 获取登录用户
 //        UserDTO user = UserThreadLocalCache.getUser();
@@ -105,9 +106,12 @@ public class BlogController {
 //        List<Blog> records = blogService.lambdaQuery().select().eq(Blog::getUserId, id).list();
 //        return Result.ok(records);
 //    }
-//    @GetMapping("/of/follow")
-//    public Result queryBlogOfFollow(@RequestParam("lastId") Long max,@RequestParam(value = "offset",defaultValue = "0") Integer offset ){
-//        return blogService.queryBlogOfFollow(max,offset);
-//
-//    }
+    @GetMapping("/of/follow")
+    @Operation(
+            summary = "queryBlogOfFollow",
+            description = "分页查询关注人推送的笔记"
+    )
+    public Result queryBlogOfFollow(@RequestParam("lastId") Long max, @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
+        return blogService.queryBlogOfFollow(max, offset);
+    }
 }

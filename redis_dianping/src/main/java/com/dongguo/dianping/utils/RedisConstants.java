@@ -40,5 +40,6 @@ public class RedisConstants {
      * follows
      */
     public static final String USER_FOLLOWS = "follows:";
+    public static final String FEED_KEY = "feed:";
     public static final String CACHE_SNOWFLAKE_WORKID_key = "application:snowflake:workid";
 }

@@ -79,6 +79,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
 
         String userKey = USER_FOLLOWS + userId;
         String otherUserKey = USER_FOLLOWS + id;
+        //取交集
         Set<String> followCommonIds = stringRedisTemplate.opsForSet().intersect(userKey, otherUserKey);
         if (CollUtil.isEmpty(followCommonIds)){
             // 无交集
