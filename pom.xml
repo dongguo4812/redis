@@ -45,6 +45,7 @@
         <mybatis.plus.spring.boot.version>3.5.5</mybatis.plus.spring.boot.version>
         <mybatis.spring.version>3.0.3</mybatis.spring.version>
         <oss.version>3.17.4</oss.version>
+        <caffeine.version>3.1.5</caffeine.version>
     </properties>
 
     <dependencyManagement>
@@ -235,6 +236,11 @@
                 <groupId>com.aliyun.oss</groupId>
                 <artifactId>aliyun-sdk-oss</artifactId>
                 <version>${oss.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

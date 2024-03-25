@@ -5,6 +5,7 @@ import com.dongguo.redis.entity.ItemStock;
 import com.dongguo.redis.entity.PageDTO;
 import com.dongguo.redis.service.IItemService;
 import com.dongguo.redis.service.IItemStockService;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,6 @@ public class ItemController {
     private IItemService itemService;
     @Autowired
     private IItemStockService stockService;
-
-//    @Autowired
-//    private Cache<Long, Item> itemCache;
-//    @Autowired
-//    private Cache<Long, ItemStock> stockCache;
 
     @GetMapping("list")
     @Operation(
@@ -75,16 +71,30 @@ public class ItemController {
         itemService.deleteById(id);
     }
 
-//    @GetMapping("/{id}")
-//    public Item findById(@PathVariable("id") Long id) {
-//        return itemCache.get(id, key -> itemService.query()
-//                .ne("status", 3).eq("id", key)
-//                .one()
-//        );
-//    }
-//
-//    @GetMapping("/stock/{id}")
-//    public ItemStock findStockById(@PathVariable("id") Long id) {
-//        return stockCache.get(id, key -> stockService.getById(key));
-//    }
+    @Autowired
+    private Cache<Long, Item> itemCache;
+    @Autowired
+    private Cache<Long, ItemStock> stockCache;
+
+    @GetMapping("/{id}")
+    @Operation(
+            summary = "findById",
+            description = "查询商品"
+    )
+    public Item findById(@PathVariable("id") Long id) {
+        return itemCache.get(id, key -> itemService.lambdaQuery()
+                .ne(Item::getStatus, 3)
+                .eq(Item::getId, key)
+                .one()
+        );
+    }
+
+    @GetMapping("/stock/{id}")
+    @Operation(
+            summary = "findStockById",
+            description = "查询商品库存"
+    )
+    public ItemStock findStockById(@PathVariable("id") Long id) {
+        return stockCache.get(id, key -> stockService.getById(key));
+    }
 }
