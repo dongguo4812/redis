@@ -31,7 +31,7 @@ public class UserEntryHandler implements EntryHandler<Item> {
     public void update(Item before, Item after) {
         log.info("修改 before {}", before);
         log.info("修改 after {}", after);
-        redisTemplate.opsForValue().set(CACHE_ITEM_KEY + before.getId(), before);
+        redisTemplate.opsForValue().set(CACHE_ITEM_KEY + after.getId(), after);
     }
 
     @Override
