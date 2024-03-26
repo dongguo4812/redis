@@ -24,3 +24,4 @@ redis_core： 通用配置
 
 reids_dianping: redis点评项目实战
 
+redis_item:多级缓存实战
